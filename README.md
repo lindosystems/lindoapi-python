@@ -9,13 +9,13 @@ This python package can be installed with pip
 For administrative users: 
 
 ```bash
-	> pip install lindo
+> pip install lindo
 ```
 
 For standard (non-administrative) users:
 
 ```bash
-	> pip install lindo --user
+> pip install lindo --user
 ```
 
 # Testing
