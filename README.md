@@ -18,7 +18,7 @@ For standard (non-administrative) users:
 > pip install lindo --user
 ```
 
-# Testing
+## Testing
 
 A quick way to test the installation is to run
 ```bash
@@ -30,7 +30,7 @@ You can also try out the samples by
 > python samples/lp.py
 ```
 
-# Possible errors due to misconfiguration
+## Possible errors due to misconfiguration
 
 You may get the following error if your LINDOAPI_HOME environment variable is not set up.  
 
