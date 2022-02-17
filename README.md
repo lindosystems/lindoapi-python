@@ -56,7 +56,7 @@ For standard (non-administrative) users:
 ```    
 $ export LINDOAPI_HOME="~/opt/lindoapi"	
 ```   
-To have this variable set automatically, add the above line to your `~/.bashrc` or `~/.bash_profile file`.
+To have this variable set automatically, add the above line to your `~/.bashrc` or `~/.bash_profile` file.
 
 
 ## How to Build Wheel and Install (for package managers)
