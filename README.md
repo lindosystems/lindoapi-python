@@ -67,7 +67,7 @@ To build the python package on any operating system first start by creating a wh
 > python -m build
 ```
 
-If the command is successful a new directory named `dist` is created in the lindoapi-python directory. The new directory will have a two files with extension `.whl` and `.tat.gz`. For example, if you built it on Mac OS using Python 3.10 the new directory will look like this.
+If the command is successful a new directory named `dist` is created in the lindoapi-python directory. The new directory will have a two files with extension `.whl` and `.tar.gz`. For example, if you built it on Mac OS using Python 3.10 the new directory will look like this.
 
 ```bash
 ├── dist
