@@ -53,7 +53,7 @@ import numpy as np
 import os
 
 
-mpiFn = "/path/to/smpi/putoptionp.mpi"
+mpiFn = "smpi/putoption.mpi"
 open(mpiFn)
 #create LINDO environment and model objects
 LicenseKey = np.array('',dtype='S1024')
