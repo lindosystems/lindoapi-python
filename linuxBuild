@@ -1,0 +1,47 @@
+#!/bin/bash
+
+version=$1
+outputfile="LinuxBuildOutput$1.txt"
+echo "Building and Testing LINDO/ Python API $1\n" > outputfile
+echo "=============================================" >> outputfile
+
+venvBuild() {
+	pip install build
+	python -m build
+	pip install dist/$1
+	python -m lindo_test >> outputfile
+	python samples/lp.py >> outputfile
+}
+
+
+python3.7 -m venv ~/myenv37
+source ~/myenv37/bin/activate
+echo "Python 3.7" >> outputfile
+echo "=============================================" >> outputfile
+venvBuild "lindo-$version-cp37-cp37m-linux_x86_64.whl"
+deactivate
+rm -rf ~/myenv37
+
+python3.8 -m venv ~/myenv38
+source ~/myenv38/bin/activate
+echo "Python 3.8" >> outputfile
+echo "=============================================" >> outputfile
+venvBuild "lindo-$version-cp38-cp38-linux_x86_64.whl"
+deactivate
+rm -rf ~/myenv38
+
+python3.9 -m venv ~/myenv39
+source ~/myenv39/bin/activate
+echo "Python 3.9" >> outputfile
+echo "=============================================" >> outputfile
+venvBuild "lindo-$version-cp39-cp39-linux_x86_64.whl"
+deactivate
+rm -rf ~/myenv39
+
+python3.10 -m venv ~/myenv310
+source ~/myenv310/bin/activate
+echo "Python 3.10" >> outputfile
+echo "=============================================" >> outputfile
+venvBuild "lindo-$version-cp310-cp310-linux_x86_64.whl"
+deactivate
+rm -rf ~/myenv310
