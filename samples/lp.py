@@ -34,13 +34,20 @@ pdLower = np.array([2,1,-lindo.LS_INFINITY,-lindo.LS_INFINITY],dtype=np.double)
 pdUpper = np.array([5,lindo.LS_INFINITY,10,lindo.LS_INFINITY],dtype=np.double)
 
 pnErrorCode = np.array([-1],dtype=np.int32)
+
+# The first try block is for catching errors raised while creating an environment
 try:
     #create LINDO environment and model objects
     LicenseKey = np.array('',dtype='S1024')
     lindo.pyLSloadLicenseString(os.getenv('LINDOAPI_HOME')+'/license/lndapi130.lic',LicenseKey)
     pnErrorCode = np.array([-1],dtype=np.int32)
     pEnv = lindo.pyLScreateEnv(pnErrorCode,LicenseKey)
+except lindo.LINDO_Exception as e:
+    print(e.args[0])
+    exit(1)
 
+# The Second try block is to catch errors raised for the allocated LINDO environment
+try:
     pModel = lindo.pyLScreateModel(pEnv,pnErrorCode)
 
   
