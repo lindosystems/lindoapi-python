@@ -10,7 +10,7 @@ import os
 import sys
 import platform
 
-VERSION = "13.0.0"
+VERSION = "13.0.2"
 
 class BuildData():
     """
@@ -87,7 +87,7 @@ elif bd.platform == 'Darwin':
         LibPath = os.path.join(bd.API_HOME, 'lib/osx32x86')
         BinPath = os.path.join(bd.API_HOME, 'bin/osx32x86')
         lib = os.path.join('bin/osx32x86', LindoLib + ".dylib")
-    extra_link_args = '-Wl,-rpath,' + LibPath
+    extra_link_args = '-Wl,-rpath,' + BinPath
     macros = [('_LINDO_DLL_', '')]
 else:
     print("System not supported!")
