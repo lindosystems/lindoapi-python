@@ -33,53 +33,52 @@ anRowX = np.array([0,2,1,2,3,2,3,0,1],dtype=np.int32)
 pdLower = np.array([2,1,-lindo.LS_INFINITY,-lindo.LS_INFINITY],dtype=np.double)
 pdUpper = np.array([5,lindo.LS_INFINITY,10,lindo.LS_INFINITY],dtype=np.double)
 
-#create LINDO environment and model objects
-LicenseKey = np.array('',dtype='S1024')
-lindo.pyLSloadLicenseString(os.getenv('LINDOAPI_HOME')+'/license/lndapi130.lic',LicenseKey)
 pnErrorCode = np.array([-1],dtype=np.int32)
-pEnv = lindo.pyLScreateEnv(pnErrorCode,LicenseKey)
+try:
+    #create LINDO environment and model objects
+    LicenseKey = np.array('',dtype='S1024')
+    lindo.pyLSloadLicenseString(os.getenv('LINDOAPI_HOME')+'/license/lndapi130.lic',LicenseKey)
+    pnErrorCode = np.array([-1],dtype=np.int32)
+    pEnv = lindo.pyLScreateEnv(pnErrorCode,LicenseKey)
 
-pModel = lindo.pyLScreateModel(pEnv,pnErrorCode)
-lindo.geterrormessage(pEnv,pnErrorCode[0])
-print(pModel)
-#load data into the model
-print("Loading LP data...")
-errorcode = lindo.pyLSloadLPData(pModel,nCons,nVars,nDir,
-                                 dObjConst,adC,adB,acConTypes,nNZ,anBegCol,
-                                 pnLenCol,adA,anRowX,pdLower,pdUpper)
-lindo.geterrormessage(pEnv,errorcode)
+    pModel = lindo.pyLScreateModel(pEnv,pnErrorCode)
 
-#solve the model
-print("Solving the model...")
-pnStatus = np.array([-1],dtype=np.int32)
-errorcode = lindo.pyLSoptimize(pModel,lindo.LS_METHOD_FREE,pnStatus)
-lindo.geterrormessage(pEnv,errorcode)
+  
+    #load data into the model
+    print("Loading LP data...")
+    lindo.pyLSloadLPData(pModel,nCons,nVars,nDir,
+                                    dObjConst,adC,adB,acConTypes,nNZ,anBegCol,
+                                    pnLenCol,adA,anRowX,pdLower,pdUpper)
 
-#retrieve the objective value
-dObj = np.array([-1.0],dtype=np.double)
-errorcode = lindo.pyLSgetInfo(pModel,lindo.LS_DINFO_POBJ,dObj)
-lindo.geterrormessage(pEnv,errorcode)
-print("Objective is: %.5f" %dObj[0])
-print("")
 
-#retrieve the primal solution and variable types
-varType = np.empty((nVars),dtype=np.byte)
-errorcode = lindo.pyLSgetVarType(pModel,varType)
-lindo.geterrormessage(pEnv,errorcode)
+    #solve the model
+    print("Solving the model...")
+    pnStatus = np.array([-1],dtype=np.int32)
+    lindo.pyLSoptimize(pModel,lindo.LS_METHOD_FREE,pnStatus)
 
-padPrimal = np.empty((nVars),dtype=np.double)
-errorcode = lindo.pyLSgetPrimalSolution(pModel,padPrimal)
-lindo.geterrormessage(pEnv,errorcode)
-print("Primal solution is: ")
-for k,x in enumerate(padPrimal): 
-    print("%.5f %c" % (padPrimal[k],varType[k]))
+    #retrieve the objective value
+    dObj = np.array([-1.0],dtype=np.double)
+    lindo.pyLSgetInfo(pModel,lindo.LS_DINFO_POBJ,dObj)
     
-#delete LINDO model pointer
-print(pModel)
-errorcode = lindo.pyLSdeleteModel(pModel)
-lindo.geterrormessage(pEnv,errorcode)
+    print("Objective is: %.5f" %dObj[0])
 
-#delete LINDO environment pointer
-errorcode = lindo.pyLSdeleteEnv(pEnv)
-lindo.geterrormessage(pEnv,errorcode)
+    #retrieve the primal solution and variable types
+    varType = np.empty((nVars),dtype=np.byte)
+    lindo.pyLSgetVarType(pModel,varType)
+
+    padPrimal = np.empty((nVars),dtype=np.double)
+    lindo.pyLSgetPrimalSolution(pModel,padPrimal)
+
+    print("Primal solution is: ")
+    for k,x in enumerate(padPrimal): 
+        print("%.5f %c" % (padPrimal[k],varType[k]))
+        
+    #delete LINDO model pointer
+    lindo.pyLSdeleteModel(pModel)
+
+    #delete LINDO environment pointer
+    lindo.pyLSdeleteEnv(pEnv)
+
+except lindo.LINDO_Exception as e:
+    lindo.geterrormessage(pEnv, e.args[1])
 
