@@ -72,8 +72,10 @@ struct module_state {
 static struct module_state _state;
 #endif
 
+// The Base Exception for the LINDO API
+static PyObject *LINDO_Exception;
 
-
+// Legacy Base Exception 
 static PyObject * error_out(PyObject *m)
 {
     struct module_state *st = GETSTATE(m);
@@ -959,10 +961,48 @@ initlindo(void)
             INITERROR;
         }
     }
+    LINDO_Exception = PyErr_NewExceptionWithDoc(
+        "lindo.Exception",
+        "Base exception class for LINDO API",
+        NULL,
+        NULL
+    );
+    if (! LINDO_Exception){
+        Py_DECREF(module);
+        INITERROR;
+    }
+    else {
+        PyModule_AddObject(module, "LINDO_Exception", LINDO_Exception);
+    }
+
+    
 
 #if PY_MAJOR_VERSION >= 3
     return module;
 #endif
+}
+
+#define LINDO_EXCEPTION(errCode,errStr) {\
+    char err[256]; \
+    snprintf(err, 256, "%d => %s", errCode, errStr); \
+    PyObject *tuple = PyTuple_New(2); \
+    PyTuple_SetItem(tuple, 0, PyUnicode_FromString(err)); \
+    PyTuple_SetItem(tuple, 1, PyLong_FromLong(errCode)); \
+    PyErr_SetObject(LINDO_Exception, tuple); \
+    return NULL; \
+}
+
+
+//Py_BuildValue("i",errCode);
+#define ERROR_SET(errCode) { \
+    char err[256]; \
+    char errStr[] = "Lindo Error Set.\nUse lindo.GetErrorMessage(pEnv, errorcode) for more detail, or see Appendix A in user manual"; \
+    snprintf(err, 256, "%d => %s", errCode, errStr); \
+    PyObject *tuple = PyTuple_New(2); \
+    PyTuple_SetItem(tuple, 0, PyUnicode_FromString(err)); \
+    PyTuple_SetItem(tuple, 1, PyLong_FromLong(errCode)); \
+    PyErr_SetObject(LINDO_Exception, tuple); \
+    return NULL; \
 }
 
 #define PyCreatObj(dim,type,pyobj,array) \
@@ -1000,9 +1040,15 @@ pyobj->flags |= NPY_OWNDATA;\
     if(pModel == NULL)\
     {\
         errorcode = LSERR_ILLEGAL_NULL_POINTER;\
-        printf("Illegal NULL pointer (error %d)\n",errorcode);\
-        return Py_BuildValue("i",errorcode);\
+        char errStr[] = "Illegal NULL pointer";\
+        LINDO_EXCEPTION(errorcode,errStr);\
     }\
+
+#define CHECK_ERRORCODE(pEnv, errorCode){\
+    char *pachMessage = NULL;\
+    LSgetErrorMessage(pEnv,errorCode,pachMessage);\
+    LINDO_EXCEPTION(errorcode,*pachMessage);\
+}\
 
 #define CHECK_OBJ_NO_FAIL(pObj,pyObj)\
     pObj = PyGetObjPtr(pyObj);\
@@ -1012,8 +1058,8 @@ pyobj->flags |= NPY_OWNDATA;\
     if(pRG == NULL)\
     {\
         errorcode = LSERR_ILLEGAL_NULL_POINTER;\
-        printf("Illegal NULL pointer (error %d)\n",errorcode);\
-        return Py_BuildValue("i",errorcode);\
+        char errStr[] = "Illegal NULL pointer";\
+        LINDO_EXCEPTION(errorcode,errStr);\
     }\
 
 #define CHECK_SAMPLE\
@@ -1021,8 +1067,8 @@ pyobj->flags |= NPY_OWNDATA;\
     if(pSample == NULL)\
     {\
         errorcode = LSERR_ILLEGAL_NULL_POINTER;\
-        printf("Illegal NULL pointer (error %d)\n",errorcode);\
-        return Py_BuildValue("i",errorcode);\
+        char errStr[] = "Illegal NULL pointer";\
+        LINDO_EXCEPTION(errorcode,errStr);\
     }\
 
 static void LS_CALLTYPE pyPrintLog(pLSmodel model,
@@ -1060,8 +1106,8 @@ PyObject *pyLScreateEnv(PyObject *self, PyObject *args)
 
     if(*pnErrorCode)
     {
-        printf("Failed to load license key (error %d)\n",*pnErrorCode);
-        return NULL;
+        char errStr[] = "Failed to load license key";
+        LINDO_EXCEPTION(*pnErrorCode,errStr);
     }
 
     return PyNewObjPtr(pEnv);
@@ -1099,15 +1145,16 @@ PyObject *pyLScreateModel(PyObject *self, PyObject *args)
 
     if(*pnErrorCode)
     {
-        printf("Failed to create model (error %d)\n",*pnErrorCode);
-        return NULL;
+        char errStr[] = "Failed to create model";
+        LINDO_EXCEPTION(*pnErrorCode,errStr);
     }
 
     *pnErrorCode = LSsetModelLogfunc(pModel,(printLOG_t)pyPrintLog,NULL);
+
     if(*pnErrorCode)
     {
-        printf("Failed to set print log (error %d)\n",*pnErrorCode);
-        return NULL;
+        char errStr[] = "Failed to set print log";
+        LINDO_EXCEPTION(*pnErrorCode,errStr);
     }
 
     return PyNewObjPtr(pModel);
@@ -1129,6 +1176,10 @@ PyObject *pyLSdeleteModel(PyObject *self, PyObject *args)
 
     errorcode = LSdeleteModel(&pModel);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -1147,7 +1198,10 @@ PyObject *pyLSdeleteEnv(PyObject *self, PyObject *args)
     CHECK_ENV;
 
     errorcode = LSdeleteEnv(&pEnv);
-
+    
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
     return Py_BuildValue("i",errorcode);
 }
 
@@ -1178,6 +1232,10 @@ PyObject *pyLScopyParam(PyObject *self, PyObject *args)
 
     errorcode = LScopyParam(sourceModel,targetModel,mSolverType);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -1201,6 +1259,8 @@ PyObject *pyLSloadLicenseString(PyObject *self, PyObject *args)
         pachLicenseKey = (char *)PyArray_GetPtr(pyLicenseKey,index);
 
     errorcode = LSloadLicenseString(pszFname,pachLicenseKey);
+    // TODO: Add an error here
+
 
     return Py_BuildValue("i",errorcode);
 }
@@ -1231,6 +1291,10 @@ PyObject *pyLSreadMPSFile(PyObject *self, PyObject *args)
 
     errorcode = LSreadMPSFile(pModel,pszFname,nFormat);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -1255,6 +1319,10 @@ PyObject *pyLSwriteMPSFile(PyObject *self, PyObject *args)
 
     errorcode = LSwriteMPSFile(pModel,pszFname,nFormat);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -1277,6 +1345,10 @@ PyObject *pyLSreadLINDOFile(PyObject *self, PyObject *args)
 
     errorcode = LSreadLINDOFile(pModel,pszFname);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -1298,6 +1370,10 @@ PyObject *pyLSwriteLINDOFile(PyObject *self, PyObject *args)
     CHECK_MODEL;
 
     errorcode = LSwriteLINDOFile(pModel,pszFname);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -1323,6 +1399,10 @@ PyObject *pyLSreadLINDOStream(PyObject *self, PyObject *args)
 
     errorcode = LSreadLINDOStream(pModel,pszStream,nStreamLen);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -1344,6 +1424,10 @@ PyObject *pyLSwriteLINGOFile(PyObject *self, PyObject *args)
     CHECK_MODEL;
 
     errorcode = LSwriteLINGOFile(pModel,pszFname);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -1370,6 +1454,10 @@ PyObject *pyLSwriteDualMPSFile(PyObject *self, PyObject *args)
 
     errorcode = LSwriteDualMPSFile(pModel,pszFname,nFormat,nObjSense);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -1391,6 +1479,10 @@ PyObject *pyLSwriteSolution(PyObject *self, PyObject *args)
     CHECK_MODEL;
 
     errorcode = LSwriteSolution(pModel,pszFname);
+    
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -1415,6 +1507,10 @@ PyObject *pyLSwriteSolutionOfType(PyObject *self, PyObject *args)
     CHECK_MODEL;
 
     errorcode = LSwriteSolutionOfType(pModel,pszFname,nFormat);
+    
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -1438,6 +1534,10 @@ PyObject *pyLSwriteIIS(PyObject *self, PyObject *args)
 
     errorcode = LSwriteIIS(pModel,pszFname);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -1459,6 +1559,10 @@ PyObject *pyLSwriteIUS(PyObject *self, PyObject *args)
     CHECK_MODEL;
 
     errorcode = LSwriteIUS(pModel,pszFname);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -1482,6 +1586,10 @@ PyObject *pyLSreadMPIFile(PyObject *self, PyObject *args)
 
     errorcode = LSreadMPIFile(pModel,pszFname);
 
+   if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -1503,6 +1611,10 @@ PyObject *pyLSwriteMPIFile(PyObject *self, PyObject *args)
     CHECK_MODEL;
 
     errorcode = LSwriteMPIFile(pModel,pszFname);
+        
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -1528,6 +1640,10 @@ PyObject *pyLSwriteWithSetsAndSC(PyObject *self, PyObject *args)
 
     errorcode = LSwriteWithSetsAndSC(pModel,pszFname,nFormat);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -1551,6 +1667,10 @@ PyObject *pyLSreadBasis(PyObject *self, PyObject *args)
     CHECK_MODEL;
 
     errorcode = LSreadBasis(pModel,pszFname,nFormat);
+        
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -1576,6 +1696,10 @@ PyObject *pyLSwriteBasis(PyObject *self, PyObject *args)
 
     errorcode = LSwriteBasis(pModel,pszFname,nFormat);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -1597,6 +1721,10 @@ PyObject *pyLSreadLPFile(PyObject *self, PyObject *args)
     CHECK_MODEL;
 
     errorcode = LSreadLPFile(pModel,pszFname);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -1621,6 +1749,10 @@ PyObject *pyLSreadLPStream(PyObject *self, PyObject *args)
     CHECK_MODEL;
 
     errorcode = LSreadLPStream(pModel,pszStream,nStreamLen);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -1713,6 +1845,10 @@ PyObject *pyLSgetFileError(PyObject *self, PyObject *args)
 
     errorcode = LSgetFileError(pModel,pnLinenum,pachLinetxt);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -1739,6 +1875,10 @@ PyObject *pyLSgetErrorRowIndex(PyObject *self, PyObject *args)
         piRow = (int *)PyArray_GetPtr(pyRow,index);
 
     errorcode = LSgetErrorRowIndex(pModel,piRow);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -1772,6 +1912,10 @@ PyObject *pyLSsetModelParameter(PyObject *self, PyObject *args)
 
     errorcode = LSsetModelParameter(pModel,nParameter,pvValue);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -1800,6 +1944,10 @@ PyObject *pyLSgetModelParameter(PyObject *self, PyObject *args)
         pvValue = (void *)PyArray_GetPtr(pyValue,index);
 
     errorcode = LSgetModelParameter(pModel,nParameter,pvValue);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -1830,6 +1978,10 @@ PyObject *pyLSsetEnvParameter(PyObject *self, PyObject *args)
 
     errorcode = LSsetEnvParameter(pEnv,nParameter,pvValue);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -1859,6 +2011,10 @@ PyObject *pyLSgetEnvParameter(PyObject *self, PyObject *args)
 
     errorcode = LSgetEnvParameter(pEnv,nParameter,pvValue);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -1882,6 +2038,10 @@ PyObject *pyLSsetModelDouParameter(PyObject *self, PyObject *args)
     CHECK_MODEL;
 
     errorcode = LSsetModelDouParameter(pModel,nParameter,dValue);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -1912,6 +2072,10 @@ PyObject *pyLSgetModelDouParameter(PyObject *self, PyObject *args)
 
     errorcode = LSgetModelDouParameter(pModel,nParameter,pdValue);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -1935,6 +2099,10 @@ PyObject *pyLSsetModelIntParameter(PyObject *self, PyObject *args)
     CHECK_MODEL;
 
     errorcode = LSsetModelIntParameter(pModel,nParameter,nValue);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -1965,6 +2133,10 @@ PyObject *pyLSgetModelIntParameter(PyObject *self, PyObject *args)
 
     errorcode = LSgetModelIntParameter(pModel,nParameter,pnValue);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -1988,6 +2160,10 @@ PyObject *pyLSsetEnvDouParameter(PyObject *self, PyObject *args)
     CHECK_ENV;
 
     errorcode = LSsetEnvDouParameter(pEnv,nParameter,dValue);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -2018,6 +2194,10 @@ PyObject *pyLSgetEnvDouParameter(PyObject *self, PyObject *args)
 
     errorcode = LSgetEnvDouParameter(pEnv,nParameter,pdValue);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -2041,6 +2221,10 @@ PyObject *pyLSsetEnvIntParameter(PyObject *self, PyObject *args)
     CHECK_ENV;
 
     errorcode = LSsetEnvIntParameter(pEnv,nParameter,nValue);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -2071,6 +2255,10 @@ PyObject *pyLSgetEnvIntParameter(PyObject *self, PyObject *args)
 
     errorcode = LSgetEnvIntParameter(pEnv,nParameter,pnValue);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -2092,6 +2280,10 @@ PyObject *pyLSreadModelParameter(PyObject *self, PyObject *args)
     CHECK_MODEL;
 
     errorcode = LSreadModelParameter(pModel,pszFname);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -2115,6 +2307,10 @@ PyObject *pyLSreadEnvParameter(PyObject *self, PyObject *args)
 
     errorcode = LSreadEnvParameter(pEnv,pszFname);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -2136,6 +2332,10 @@ PyObject *pyLSwriteModelParameter(PyObject *self, PyObject *args)
     CHECK_MODEL;
 
     errorcode = LSwriteModelParameter(pModel,pszFname);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -2171,6 +2371,10 @@ PyObject *pyLSgetIntParameterRange(PyObject *self, PyObject *args)
 
     errorcode = LSgetIntParameterRange(pModel,nParameter,pnValMIN,pnValMAX);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -2205,6 +2409,10 @@ PyObject *pyLSgetDouParameterRange(PyObject *self, PyObject *args)
 
     errorcode = LSgetDouParameterRange(pModel,nParameter,pdValMIN,pdValMAX);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -2233,6 +2441,10 @@ PyObject *pyLSgetParamShortDesc(PyObject *self, PyObject *args)
         szDescription = (char *)PyArray_GetPtr(pyDescription,index);
 
     errorcode = LSgetParamShortDesc(pEnv,nParam,szDescription);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -2263,6 +2475,10 @@ PyObject *pyLSgetParamLongDesc(PyObject *self, PyObject *args)
 
     errorcode = LSgetParamLongDesc(pEnv,nParam,szDescription);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -2291,6 +2507,10 @@ PyObject *pyLSgetParamMacroName(PyObject *self, PyObject *args)
         szParam = (char *)PyArray_GetPtr(pyParam,index);
 
     errorcode = LSgetParamMacroName(pEnv,nParam,szParam);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -2325,6 +2545,10 @@ PyObject *pyLSgetParamMacroID(PyObject *self, PyObject *args)
         pnParam = (int *)PyArray_GetPtr(pyParam,index);
 
     errorcode = LSgetParamMacroID(pEnv,szParam,pnParamType,pnParam);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -2409,6 +2633,10 @@ PyObject *pyLSloadLPData(PyObject *self, PyObject *args)
                              padL,
                              padU);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -2453,6 +2681,10 @@ PyObject *pyLSloadQCData(PyObject *self, PyObject *args)
                              paiQCcols1,
                              paiQCcols2,
                              padQCcoef);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -2500,6 +2732,10 @@ PyObject *pyLSloadConeData(PyObject *self, PyObject *args)
                                paiConebegcone,
                                paiConecols);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -2545,6 +2781,10 @@ PyObject *pyLSloadSETSData(PyObject *self, PyObject *args)
                                paiSETSbegcol,
                                paiSETScols);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -2585,6 +2825,10 @@ PyObject *pyLSloadSemiContData(PyObject *self, PyObject *args)
                                    padL,
                                    padU);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -2612,6 +2856,10 @@ PyObject *pyLSloadVarType(PyObject *self, PyObject *args)
 
     errorcode = LSloadVarType(pModel,
                               pszVarTypes);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -2667,6 +2915,10 @@ PyObject *pyLSloadNLPData(PyObject *self, PyObject *args)
                               nNLPobj,
                               paiNLPobj,
                               padNLPobj);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -2766,6 +3018,10 @@ PyObject *pyLSloadInstruct(PyObject *self, PyObject *args)
                                padLB,
                                padUB);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -2864,6 +3120,10 @@ PyObject *pyLSaddInstruct(PyObject *self, PyObject *args)
                               padLB,
                               padUB);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 /**********************************************************************
@@ -2898,6 +3158,10 @@ PyObject *pyLSloadBasis(PyObject *self, PyObject *args)
                             panCstatus,
                             panRstatus);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -2926,6 +3190,10 @@ PyObject *pyLSloadVarPriorities(PyObject *self, PyObject *args)
     errorcode = LSloadVarPriorities(pModel,
                                     panCprior);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -2950,6 +3218,10 @@ PyObject *pyLSreadVarPriorities(PyObject *self, PyObject *args)
 
     errorcode = LSreadVarPriorities(pModel,
                                     pszFname);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -2978,6 +3250,10 @@ PyObject *pyLSloadVarStartPoint(PyObject *self, PyObject *args)
 
     errorcode = LSloadVarStartPoint(pModel,
                                     padPrimal);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -3015,6 +3291,10 @@ PyObject *pyLSloadVarStartPointPartial(PyObject *self, PyObject *args)
                                            paiCols,
                                            padPrimal);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -3042,6 +3322,10 @@ PyObject *pyLSloadMIPVarStartPoint(PyObject *self, PyObject *args)
 
     errorcode = LSloadMIPVarStartPoint(pModel,
                                        padPrimal);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -3079,6 +3363,10 @@ PyObject *pyLSloadMIPVarStartPointPartial(PyObject *self, PyObject *args)
                                               paiCols,
                                               paiPrimal);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -3103,6 +3391,10 @@ PyObject *pyLSreadVarStartPoint(PyObject *self, PyObject *args)
 
     errorcode = LSreadVarStartPoint(pModel,
                                     pszFname);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -3142,6 +3434,10 @@ PyObject *pyLSloadBlockStructure(PyObject *self, PyObject *args)
                                      panCblock,
                                      nType);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -3174,6 +3470,10 @@ PyObject *pyLSoptimize(PyObject *self, PyObject *args)
 
     errorcode = LSoptimize(pModel,nMethod,pnStatus);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -3200,6 +3500,10 @@ PyObject *pyLSsolveMIP(PyObject *self, PyObject *args)
         pnMIPSolStatus = (int *)PyArray_GetPtr(pyMIPSolStatus,index);
 
     errorcode = LSsolveMIP(pModel,pnMIPSolStatus);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -3228,6 +3532,10 @@ PyObject *pyLSsolveGOP(PyObject *self, PyObject *args)
 
     errorcode = LSsolveGOP(pModel,pnGOPSolStatus);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -3255,6 +3563,10 @@ PyObject *pyLSoptimizeQP(PyObject *self, PyObject *args)
 
     errorcode = LSoptimizeQP(pModel,pnQPSolStatus);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -3274,6 +3586,10 @@ PyObject *pyLScheckConvexity(PyObject *self, PyObject *args)
     CHECK_MODEL;
 
     errorcode = LScheckConvexity(pModel);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -3310,6 +3626,9 @@ PyObject *pyLSsolveSBD(PyObject *self, PyObject *args)
                            (int *)panColStage->data,
                            pnStatus);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
     return Py_BuildValue("i",errorcode);
 }
 
@@ -3343,6 +3662,10 @@ PyObject *pyLSgetInfo(PyObject *self, PyObject *args)
 
     errorcode = LSgetInfo(pModel,nQuery,pvResult);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -3369,6 +3692,10 @@ PyObject *pyLSgetPrimalSolution(PyObject *self, PyObject *args)
         padPrimal = (double *)PyArray_GetPtr(pyPrimal,index);
 
     errorcode = LSgetPrimalSolution(pModel,padPrimal);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -3397,6 +3724,10 @@ PyObject *pyLSgetDualSolution(PyObject *self, PyObject *args)
 
     errorcode = LSgetDualSolution(pModel,padDual);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -3423,6 +3754,10 @@ PyObject *pyLSgetReducedCosts(PyObject *self, PyObject *args)
         padRedcosts = (double *)PyArray_GetPtr(pyRedcosts,index);
 
     errorcode = LSgetReducedCosts(pModel,padRedcosts);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -3451,6 +3786,10 @@ PyObject *pyLSgetReducedCostsCone(PyObject *self, PyObject *args)
 
     errorcode = LSgetReducedCostsCone(pModel,padRedcosts);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -3477,6 +3816,10 @@ PyObject *pyLSgetSlacks(PyObject *self, PyObject *args)
         padSlacks = (double *)PyArray_GetPtr(pySlacks,index);
 
     errorcode = LSgetSlacks(pModel,padSlacks);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -3508,6 +3851,10 @@ PyObject *pyLSgetBasis(PyObject *self, PyObject *args)
 
     errorcode = LSgetBasis(pModel,panCstatus,panRstatus);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -3537,6 +3884,10 @@ PyObject *pyLSgetSolution(PyObject *self, PyObject *args)
 
     errorcode = LSgetSolution(pModel,nWhich,padVal);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -3563,6 +3914,10 @@ PyObject *pyLSgetMIPPrimalSolution(PyObject *self, PyObject *args)
         padPrimal = (double *)PyArray_GetPtr(pyPrimal,index);
 
     errorcode = LSgetMIPPrimalSolution(pModel,padPrimal);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -3591,6 +3946,10 @@ PyObject *pyLSgetMIPDualSolution(PyObject *self, PyObject *args)
 
     errorcode = LSgetMIPDualSolution(pModel,padDual);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -3618,6 +3977,10 @@ PyObject *pyLSgetMIPReducedCosts(PyObject *self, PyObject *args)
 
     errorcode = LSgetMIPReducedCosts(pModel,padRedcosts);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -3644,6 +4007,10 @@ PyObject *pyLSgetMIPSlacks(PyObject *self, PyObject *args)
         padSlacks = (double *)PyArray_GetPtr(pySlacks,index);
 
     errorcode = LSgetMIPSlacks(pModel,padSlacks);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -3675,6 +4042,10 @@ PyObject *pyLSgetMIPBasis(PyObject *self, PyObject *args)
 
     errorcode = LSgetMIPBasis(pModel,panCstatus,panRstatus);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -3701,6 +4072,10 @@ PyObject *pyLSgetNextBestMIPSol(PyObject *self, PyObject *args)
         pnIntModStatus = (int *)PyArray_GetPtr(pyIntModStatus,index);
 
     errorcode = LSgetNextBestMIPSol(pModel,pnIntModStatus);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -3781,6 +4156,10 @@ PyObject *pyLSgetLPData(PyObject *self, PyObject *args)
                             padL,
                             padU);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -3825,6 +4204,10 @@ PyObject *pyLSgetQCData(PyObject *self, PyObject *args)
                             paiQCcols1,
                             paiQCcols2,
                             padQCcoef);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -3874,6 +4257,10 @@ PyObject *pyLSgetQCDatai(PyObject *self, PyObject *args)
                              paiQCcols2,
                              padQCcoef);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -3903,6 +4290,10 @@ PyObject *pyLSgetVarType(PyObject *self, PyObject *args)
     errorcode = LSgetVarType(pModel,
                              pachVarTypes);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -3931,6 +4322,10 @@ PyObject *pyLSgetVarStartPoint(PyObject *self, PyObject *args)
 
     errorcode = LSgetVarStartPoint(pModel,
                                    padPrimal);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -3970,6 +4365,10 @@ PyObject *pyLSgetVarStartPointPartial(PyObject *self, PyObject *args)
                                           paiCols,
                                           padPrimal);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -4008,6 +4407,10 @@ PyObject *pyLSgetMIPVarStartPointPartial(PyObject *self, PyObject *args)
                                              paiCols,
                                              paiPrimal);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -4036,6 +4439,10 @@ PyObject *pyLSgetMIPVarStartPoint(PyObject *self, PyObject *args)
 
     errorcode = LSgetMIPVarStartPoint(pModel,
                                       padPrimal);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -4096,6 +4503,10 @@ PyObject *pyLSgetSETSData(PyObject *self, PyObject *args)
                               piBegset,
                               piVarndx);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -4145,6 +4556,10 @@ PyObject *pyLSgetSETSDatai(PyObject *self, PyObject *args)
                                piNnz,
                                piVarndx);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -4190,6 +4605,10 @@ PyObject *pyLSgetSemiContData(PyObject *self, PyObject *args)
                                   piVarndx,
                                   padL,
                                   padU);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -4256,6 +4675,10 @@ PyObject *pyLSgetLPVariableDataj(PyObject *self, PyObject *args)
                                      paiArows,
                                      padAcoef);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -4287,6 +4710,10 @@ PyObject *pyLSgetVariableNamej(PyObject *self, PyObject *args)
     errorcode = LSgetVariableNamej(pModel,
                                    iVar,
                                    pachVarName);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -4320,6 +4747,10 @@ PyObject *pyLSgetVariableIndex(PyObject *self, PyObject *args)
                                    pszVarName,
                                    piVar);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -4352,6 +4783,10 @@ PyObject *pyLSgetConstraintNamei(PyObject *self, PyObject *args)
                                      iCon,
                                      pachConName);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -4383,6 +4818,10 @@ PyObject *pyLSgetConstraintIndex(PyObject *self, PyObject *args)
     errorcode = LSgetConstraintIndex(pModel,
                                      pszConName,
                                      piCon);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -4424,6 +4863,10 @@ PyObject *pyLSgetConstraintDatai(PyObject *self, PyObject *args)
                                      pachConType,
                                      pachIsNlp,
                                      pdB);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -4476,6 +4919,10 @@ PyObject *pyLSgetLPConstraintDatai(PyObject *self, PyObject *args)
                                        piVar,
                                        pdAcoef);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -4508,6 +4955,10 @@ PyObject *pyLSgetConeNamei(PyObject *self, PyObject *args)
                                iCone,
                                pachConeName);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -4539,6 +4990,10 @@ PyObject *pyLSgetConeIndex(PyObject *self, PyObject *args)
     errorcode = LSgetConeIndex(pModel,
                                pszConeName,
                                piCone);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -4584,6 +5039,10 @@ PyObject *pyLSgetConeDatai(PyObject *self, PyObject *args)
 							   pdConeAlpha,
                                piNnz,
                                paiCols);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -4653,6 +5112,10 @@ PyObject *pyLSgetNLPData(PyObject *self, PyObject *args)
                              padNLPobj,
                              pachNLPConTypes);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -4693,6 +5156,10 @@ PyObject *pyLSgetNLPConstraintDatai(PyObject *self, PyObject *args)
                                         pnNnz,
                                         paiNLPcols,
                                         padNLPcoef);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -4735,6 +5202,10 @@ PyObject *pyLSgetNLPVariableDataj(PyObject *self, PyObject *args)
                                       panNLProws,
                                       padNLPcoef);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -4773,6 +5244,10 @@ PyObject *pyLSgetNLPObjectiveData(PyObject *self, PyObject *args)
                                       paiNLPobj,
                                       padNLPobj);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -4807,6 +5282,10 @@ PyObject *pyLSgetDualModel(PyObject *self, PyObject *args)
 
     errorcode = LSgetDualModel(pModel,
                                pDualModel);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -4890,6 +5369,10 @@ PyObject *pyLSgetInstruct(PyObject *self, PyObject *args)
                               padLwrBnd,
                               padUprBnd);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -4926,6 +5409,10 @@ PyObject *pyLScalinfeasMIPsolution(PyObject *self, PyObject *args)
                                        pdIntPfeas,
                                        pbConsPfeas,
                                        pdPrimalMipsol);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -4979,6 +5466,10 @@ PyObject *pyLSgetRoundMIPsolution(PyObject *self, PyObject *args)
                                       pnstatus,
                                       iUseOpti);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -5020,6 +5511,10 @@ PyObject *pyLSgetDuplicateColumns(PyObject *self, PyObject *args)
                                       paiSetsBeg,
                                       paiCols);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -5048,6 +5543,10 @@ PyObject *pyLSgetRangeData(PyObject *self, PyObject *args)
 
     errorcode = LSgetRangeData(pModel,
                                padR);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -5107,6 +5606,10 @@ PyObject *pyLSaddConstraints(PyObject *self, PyObject *args)
                                  padAcoef,
                                  paiAcols,
                                  padB);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -5177,6 +5680,10 @@ PyObject *pyLSaddVariables(PyObject *self, PyObject *args)
                                padL,
                                padU);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -5226,6 +5733,10 @@ PyObject *pyLSaddCones(PyObject *self, PyObject *args)
                            paiConebegcol,
                            paiConecols);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -5272,6 +5783,10 @@ PyObject *pyLSaddSETS(PyObject *self, PyObject *args)
                           paiSETSbegcol,
                           paiSETScols);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -5314,6 +5829,10 @@ PyObject *pyLSaddQCterms(PyObject *self, PyObject *args)
                              paiQCvarndx2,
                              padQCcoef);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -5343,6 +5862,10 @@ PyObject *pyLSdeleteConstraints(PyObject *self, PyObject *args)
     errorcode = LSdeleteConstraints(pModel,
                                     nCons,
                                     paiCons);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -5374,6 +5897,10 @@ PyObject *pyLSdeleteCones(PyObject *self, PyObject *args)
                               nCones,
                               paiCones);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -5403,6 +5930,10 @@ PyObject *pyLSdeleteSETS(PyObject *self, PyObject *args)
     errorcode = LSdeleteSETS(pModel,
                              nSETS,
                              paiSETS);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -5434,6 +5965,10 @@ PyObject *pyLSdeleteSemiContVars(PyObject *self, PyObject *args)
                                      nSCVars,
                                      paiSCVars);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -5464,6 +5999,10 @@ PyObject *pyLSdeleteVariables(PyObject *self, PyObject *args)
                                   nVars,
                                   paiVars);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -5493,6 +6032,10 @@ PyObject *pyLSdeleteQCterms(PyObject *self, PyObject *args)
     errorcode = LSdeleteQCterms(pModel,
                                 nCons,
                                 paiCons);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -5525,6 +6068,10 @@ PyObject *pyLSdeleteAj(PyObject *self, PyObject *args)
                            iVar1,
                            nRows,
                            paiRows);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -5560,6 +6107,10 @@ PyObject *pyLSmodifyLowerBounds(PyObject *self, PyObject *args)
                                     paiVars,
                                     padL);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -5593,6 +6144,10 @@ PyObject *pyLSmodifyUpperBounds(PyObject *self, PyObject *args)
                                     nVars,
                                     paiVars,
                                     padU);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -5628,6 +6183,10 @@ PyObject *pyLSmodifyRHS(PyObject *self, PyObject *args)
                             paiCons,
                             padB);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -5662,6 +6221,10 @@ PyObject *pyLSmodifyObjective(PyObject *self, PyObject *args)
                                   paiVars,
                                   padC);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -5685,6 +6248,10 @@ PyObject *pyLSmodifyObjConstant(PyObject *self, PyObject *args)
 
     errorcode = LSmodifyObjConstant(pModel,
                                     dObjConst);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -5721,6 +6288,10 @@ PyObject *pyLSmodifyAj(PyObject *self, PyObject *args)
                            nRows,
                            paiRows,
                            padAj);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -5759,6 +6330,10 @@ PyObject *pyLSmodifyCone(PyObject *self, PyObject *args)
                              paiConeCols,
 							 dConeAlpha);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -5793,6 +6368,10 @@ PyObject *pyLSmodifySET(PyObject *self, PyObject *args)
                             iSETnum,
                             iSETnnz,
                             paiSETcols);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -5831,6 +6410,10 @@ PyObject *pyLSmodifySemiContVars(PyObject *self, PyObject *args)
                                      padL,
                                      padU);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -5866,6 +6449,10 @@ PyObject *pyLSmodifyConstraintType(PyObject *self, PyObject *args)
                                        nCons,
                                        paiCons,
                                        pszConTypes);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -5903,6 +6490,10 @@ PyObject *pyLSmodifyVariableType(PyObject *self, PyObject *args)
                                      paiVars,
                                      pszVarTypes);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -5939,6 +6530,10 @@ PyObject *pyLSaddNLPAj(PyObject *self, PyObject *args)
                            paiRows,
                            padAj);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -5973,6 +6568,10 @@ PyObject *pyLSaddNLPobj(PyObject *self, PyObject *args)
                             paiCols,
                             padColj);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -6002,6 +6601,10 @@ PyObject *pyLSdeleteNLPobj(PyObject *self, PyObject *args)
     errorcode = LSdeleteNLPobj(pModel,
                                nCols,
                                paiCols);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -6039,6 +6642,10 @@ PyObject *pyLSgetConstraintRanges(PyObject *self, PyObject *args)
                                       padDec,
                                       padInc);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -6071,6 +6678,10 @@ PyObject *pyLSgetObjectiveRanges(PyObject *self, PyObject *args)
     errorcode = LSgetObjectiveRanges(pModel,
                                      padDec,
                                      padInc);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -6105,6 +6716,10 @@ PyObject *pyLSgetBoundRanges(PyObject *self, PyObject *args)
                                  padDec,
                                  padInc);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -6138,6 +6753,10 @@ PyObject *pyLSgetBestBounds(PyObject *self, PyObject *args)
                                  padBestL,
                                  padBestU);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -6162,6 +6781,10 @@ PyObject *pyLSfindIIS(PyObject *self, PyObject *args)
     errorcode = LSfindIIS(pModel,
                           nLevel);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -6185,6 +6808,10 @@ PyObject *pyLSfindIUS(PyObject *self, PyObject *args)
 
     errorcode = LSfindIUS(pModel,
                           nLevel);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -6211,6 +6838,10 @@ PyObject *pyLSfindBlockStructure(PyObject *self, PyObject *args)
     errorcode = LSfindBlockStructure(pModel,
                                      nBlock,
                                      nType);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -6271,6 +6902,10 @@ PyObject *pyLSgetIIS(PyObject *self, PyObject *args)
                          paiVars,
                          panBnds);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -6309,6 +6944,10 @@ PyObject *pyLSgetIUS(PyObject *self, PyObject *args)
                          pnSuf,
                          pnIUS,
                          paiVars);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -6353,6 +6992,10 @@ PyObject *pyLSgetBlockStructure(PyObject *self, PyObject *args)
                                     panCblock,
                                     pnType);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -6381,6 +7024,10 @@ PyObject *pyLSwriteDeteqMPSFile(PyObject *self, PyObject *args)
 
     errorcode = LSwriteDeteqMPSFile(pModel,pszFilename,nFormat,iType);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -6404,6 +7051,10 @@ PyObject *pyLSwriteDeteqLINDOFile(PyObject *self, PyObject *args)
     CHECK_MODEL;
 
     errorcode = LSwriteDeteqLINDOFile(pModel,pszFilename,iType);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -6435,6 +7086,10 @@ PyObject *pyLSwriteSMPSFile(PyObject *self, PyObject *args)
                                 pszStocfile,
                                 nCoretype);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -6465,6 +7120,10 @@ PyObject *pyLSreadSMPSFile(PyObject *self, PyObject *args)
                                pszStocfile,
                                nCoretype);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -6491,6 +7150,10 @@ PyObject *pyLSwriteSMPIFile(PyObject *self, PyObject *args)
                                 pszCorefile,
                                 pszTimefile,
                                 pszStocfile);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -6519,6 +7182,10 @@ PyObject *pyLSreadSMPIFile(PyObject *self, PyObject *args)
                                pszTimefile,
                                pszStocfile);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -6544,6 +7211,10 @@ PyObject *pyLSwriteScenarioSolutionFile(PyObject *self, PyObject *args)
     errorcode = LSwriteScenarioSolutionFile(pModel,
                                             jScenario,
                                             pszFname);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -6573,6 +7244,10 @@ PyObject *pyLSwriteNodeSolutionFile(PyObject *self, PyObject *args)
                                         iStage,
                                         pszFname);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -6598,6 +7273,10 @@ PyObject *pyLSwriteScenarioMPIFile(PyObject *self, PyObject *args)
     errorcode = LSwriteScenarioMPIFile(pModel,
                                        jScenario,
                                        pszFname);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -6628,6 +7307,10 @@ PyObject *pyLSwriteScenarioMPSFile(PyObject *self, PyObject *args)
                                        pszFname,
                                        nFormat);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -6654,6 +7337,10 @@ PyObject *pyLSwriteScenarioLINDOFile(PyObject *self, PyObject *args)
                                          jScenario,
                                          pszFname);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -6679,6 +7366,10 @@ PyObject *pyLSsetModelStocDouParameter(PyObject *self, PyObject *args)
     errorcode = LSsetModelStocDouParameter(pModel,
                                            iPar,
                                            dVal);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -6709,6 +7400,10 @@ PyObject *pyLSgetModelStocDouParameter(PyObject *self, PyObject *args)
 
     errorcode = LSgetModelStocDouParameter(pModel,iPar,pdValue);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -6734,6 +7429,10 @@ PyObject *pyLSsetModelStocIntParameter(PyObject *self, PyObject *args)
     errorcode = LSsetModelStocIntParameter(pModel,
                                            iPar,
                                            iVal);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -6764,6 +7463,10 @@ PyObject *pyLSgetModelStocIntParameter(PyObject *self, PyObject *args)
 
     errorcode = LSgetModelStocIntParameter(pModel,iPar,piValue);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -6792,6 +7495,10 @@ PyObject *pyLSgetScenarioIndex(PyObject *self, PyObject *args)
         pnIndex = (int *)PyArray_GetPtr(pyIndex,index);
 
     errorcode = LSgetScenarioIndex(pModel,pszName,pnIndex);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -6822,6 +7529,10 @@ PyObject *pyLSgetStageIndex(PyObject *self, PyObject *args)
 
     errorcode = LSgetStageIndex(pModel,pszName,pnIndex);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -6850,6 +7561,10 @@ PyObject *pyLSgetStocParIndex(PyObject *self, PyObject *args)
         pnIndex = (int *)PyArray_GetPtr(pyIndex,index);
 
     errorcode = LSgetStocParIndex(pModel,pszName,pnIndex);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -6880,6 +7595,10 @@ PyObject *pyLSgetStocParName(PyObject *self, PyObject *args)
 
     errorcode = LSgetStocParName(pModel,nIndex,pachName);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -6908,6 +7627,10 @@ PyObject *pyLSgetScenarioName(PyObject *self, PyObject *args)
         pachName = (char *)PyArray_GetPtr(pyName,index);
 
     errorcode = LSgetScenarioName(pModel,nIndex,pachName);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -6938,6 +7661,10 @@ PyObject *pyLSgetStageName(PyObject *self, PyObject *args)
 
     errorcode = LSgetStageName(pModel,nIndex,pachName);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -6967,6 +7694,10 @@ PyObject *pyLSgetStocInfo(PyObject *self, PyObject *args)
         pvResult = (void *)PyArray_GetPtr(pyResult,index);
 
     errorcode = LSgetStocInfo(pModel,nQuery,nParam,pvResult);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -6999,6 +7730,10 @@ PyObject *pyLSgetStocCCPInfo(PyObject *self, PyObject *args)
 
     errorcode = LSgetStocCCPInfo(pModel,nQuery,nScenarioIndex,nCPPIndex,pvResult);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -7025,6 +7760,10 @@ PyObject *pyLSloadSampleSizes(PyObject *self, PyObject *args)
         panSampleSize = (void *)PyArray_GetPtr(pySampleSize,index);
 
     errorcode = LSloadSampleSizes(pModel,panSampleSize);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -7053,6 +7792,10 @@ PyObject *pyLSloadConstraintStages(PyObject *self, PyObject *args)
 
     errorcode = LSloadConstraintStages(pModel,panStage);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -7079,6 +7822,10 @@ PyObject *pyLSloadVariableStages(PyObject *self, PyObject *args)
         panStage = (void *)PyArray_GetPtr(pyStage,index);
 
     errorcode = LSloadVariableStages(pModel,panStage);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -7112,6 +7859,10 @@ PyObject *pyLSloadStageData(PyObject *self, PyObject *args)
 
     errorcode = LSloadStageData(pModel,numStages,panRstage,panCstage);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -7143,6 +7894,10 @@ PyObject *pyLSloadStocParData(PyObject *self, PyObject *args)
 
     errorcode = LSloadStocParData(pModel,panSparStage,padSparValue);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -7172,8 +7927,8 @@ PyObject *pyLSgetDeteqModel(PyObject *self, PyObject *args)
     if(pModel == NULL)
     {
         *pnErrorCode = LSERR_ILLEGAL_NULL_POINTER;
-        printf("Illegal NULL pointer (error %d)\n",*pnErrorCode);
-        return NULL;
+        char errStr[] = "Illegal NULL pointer";
+        LINDO_EXCEPTION(*pnErrorCode,errStr);
     }
 
     pDeteqModel = LSgetDeteqModel(pModel,iDeqType,pnErrorCode);
@@ -7206,6 +7961,10 @@ PyObject *pyLSaggregateStages(PyObject *self, PyObject *args)
 
     errorcode = LSaggregateStages(pModel,panScheme,nLength);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -7237,6 +7996,10 @@ PyObject *pyLSgetStageAggScheme(PyObject *self, PyObject *args)
 
     errorcode = LSgetStageAggScheme(pModel,panScheme,pnLength);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -7263,6 +8026,10 @@ PyObject *pyLSsolveSP(PyObject *self, PyObject *args)
         pnStatus = (int *)PyArray_GetPtr(pyStatus,index);
 
     errorcode = LSsolveSP(pModel,pnStatus);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -7293,6 +8060,10 @@ PyObject *pyLSsolveHS(PyObject *self, PyObject *args)
 
     errorcode = LSsolveHS(pModel,nSearchMethod,pnStatus);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -7321,6 +8092,10 @@ PyObject *pyLSgetScenarioObjective(PyObject *self, PyObject *args)
         pObj = (double *)PyArray_GetPtr(pyObj,index);
 
     errorcode = LSgetScenarioObjective(pModel,jScenario,pObj);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -7352,6 +8127,10 @@ PyObject *pyLSgetNodePrimalSolution(PyObject *self, PyObject *args)
 
     errorcode = LSgetNodePrimalSolution(pModel,jScenario,iStage,padX);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -7381,6 +8160,10 @@ PyObject *pyLSgetNodeDualSolution(PyObject *self, PyObject *args)
         padY = (double *)PyArray_GetPtr(pyY,index);
 
     errorcode = LSgetNodeDualSolution(pModel,jScenario,iStage,padY);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -7412,6 +8195,10 @@ PyObject *pyLSgetNodeReducedCost(PyObject *self, PyObject *args)
 
     errorcode = LSgetNodeReducedCost(pModel,jScenario,iStage,padX);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -7441,6 +8228,10 @@ PyObject *pyLSgetNodeSlacks(PyObject *self, PyObject *args)
         padY = (double *)PyArray_GetPtr(pyY,index);
 
     errorcode = LSgetNodeSlacks(pModel,jScenario,iStage,padY);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -7476,6 +8267,10 @@ PyObject *pyLSgetScenarioPrimalSolution(PyObject *self, PyObject *args)
 
     errorcode = LSgetScenarioPrimalSolution(pModel,jScenario,padX,pObj);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -7504,6 +8299,10 @@ PyObject *pyLSgetScenarioReducedCost(PyObject *self, PyObject *args)
         padD = (double *)PyArray_GetPtr(pyD,index);
 
     errorcode = LSgetScenarioReducedCost(pModel,jScenario,padD);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -7534,6 +8333,10 @@ PyObject *pyLSgetScenarioDualSolution(PyObject *self, PyObject *args)
 
     errorcode = LSgetScenarioDualSolution(pModel,jScenario,padY);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -7562,6 +8365,10 @@ PyObject *pyLSgetScenarioSlacks(PyObject *self, PyObject *args)
         padS = (double *)PyArray_GetPtr(pyS,index);
 
     errorcode = LSgetScenarioSlacks(pModel,jScenario,padS);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -7595,6 +8402,10 @@ PyObject *pyLSgetNodeListByScenario(PyObject *self, PyObject *args)
 
     errorcode = LSgetNodeListByScenario(pModel,jScenario,paiNodes,pnNodes);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -7624,6 +8435,10 @@ PyObject *pyLSgetProbabilityByScenario(PyObject *self, PyObject *args)
 
     errorcode = LSgetProbabilityByScenario(pModel,jScenario,pdProb);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -7652,6 +8467,10 @@ PyObject *pyLSgetProbabilityByNode(PyObject *self, PyObject *args)
         pdProb = (double *)PyArray_GetPtr(pyProb,index);
 
     errorcode = LSgetProbabilityByNode(pModel,iNode,pdProb);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -7683,6 +8502,10 @@ PyObject *pyLSgetStocParData(PyObject *self, PyObject *args)
         padVals = (double *)PyArray_GetPtr(pyVals,index);
 
     errorcode = LSgetStocParData(pModel,paiStages,padVals);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -7744,6 +8567,10 @@ PyObject *pyLSaddDiscreteBlocks(PyObject *self, PyObject *args)
                                     padVals,
                                     nModifyRule);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -7802,6 +8629,9 @@ PyObject *pyLSaddScenario(PyObject *self, PyObject *args)
                               paiStvs,
                               padVals,
                               nModifyRule);
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -7848,6 +8678,10 @@ PyObject *pyLSaddDiscreteIndep(PyObject *self, PyObject *args)
                                    padVals,
                                    nModifyRule);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -7889,6 +8723,9 @@ PyObject *pyLSaddParamDistIndep(PyObject *self, PyObject *args)
                                    nParams,
                                    padParams,
                                    nModifyRule);
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -7928,6 +8765,10 @@ PyObject *pyLSaddChanceConstraint(PyObject *self, PyObject *args)
                                       dPrLevel,
                                       dObjWeight);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -7951,6 +8792,10 @@ PyObject *pyLSsetNumStages(PyObject *self, PyObject *args)
 
     errorcode = LSsetNumStages(pModel,
                                numStages);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -7983,6 +8828,10 @@ PyObject *pyLSgetStocParOutcomes(PyObject *self, PyObject *args)
         padProbs = (double *)PyArray_GetPtr(pyProbs,index);
 
     errorcode = LSgetStocParOutcomes(pModel,jScenario,pdValue,padProbs);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -8027,6 +8876,10 @@ PyObject *pyLSloadCorrelationMatrix(PyObject *self, PyObject *args)
                                         paiQCcols1,
                                         paiQCcols2,
                                         padQCcoef);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -8077,6 +8930,10 @@ PyObject *pyLSgetCorrelationMatrix(PyObject *self, PyObject *args)
                                        paiQCcols2,
                                        padQCcoef);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -8108,8 +8965,8 @@ PyObject *pyLSgetStocParSample(PyObject *self, PyObject *args)
     if(pModel == NULL)
     {
         *pnErrorCode = LSERR_ILLEGAL_NULL_POINTER;
-        printf("Illegal NULL pointer (error %d)\n",*pnErrorCode);
-        return NULL;
+        char errStr[] = "Illegal NULL pointer";
+        LINDO_EXCEPTION(*pnErrorCode,errStr);
     }
 
     pSample = LSgetStocParSample(pModel,iStv,iRow,jCol,pnErrorCode);
@@ -8167,6 +9024,10 @@ PyObject *pyLSgetDiscreteBlocks(PyObject *self, PyObject *args)
                                     padProbs,
                                     piModifyRule);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -8221,6 +9082,10 @@ PyObject *pyLSgetDiscreteBlockOutcomes(PyObject *self, PyObject *args)
                                            paiAcols,
                                            paiStvs,
                                            padVals);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -8294,6 +9159,10 @@ PyObject *pyLSgetDiscreteIndep(PyObject *self, PyObject *args)
                                    padVals,
                                    piModifyRule);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -8361,6 +9230,10 @@ PyObject *pyLSgetParamDistIndep(PyObject *self, PyObject *args)
                                     pnParams,
                                     padParams,
                                     piModifyRule);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -8435,6 +9308,10 @@ PyObject *pyLSgetScenario(PyObject *self, PyObject *args)
                               padVals,
                               piModifyRule);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -8487,6 +9364,10 @@ PyObject *pyLSgetChanceConstraint(PyObject *self, PyObject *args)
                                       pdProb,
                                       pdObjWeight);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -8515,6 +9396,10 @@ PyObject *pyLSgetSampleSizes(PyObject *self, PyObject *args)
 
     errorcode = LSgetSampleSizes(pModel,
                                  panSampleSize);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -8545,6 +9430,10 @@ PyObject *pyLSgetConstraintStages(PyObject *self, PyObject *args)
     errorcode = LSgetConstraintStages(pModel,
                                       panStage);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -8574,6 +9463,10 @@ PyObject *pyLSgetVariableStages(PyObject *self, PyObject *args)
     errorcode = LSgetVariableStages(pModel,
                                     panStage);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -8602,6 +9495,10 @@ PyObject *pyLSgetStocRowIndices(PyObject *self, PyObject *args)
 
     errorcode = LSgetStocRowIndices(pModel,
                                     paiSrows);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -8634,6 +9531,10 @@ PyObject *pyLSsetStocParRG(PyObject *self, PyObject *args)
 
     errorcode = LSsetStocParRG(pModel,iStv,iRow,jCol,pRG);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+    
     return Py_BuildValue("i",errorcode);
 }
 
@@ -8660,11 +9561,11 @@ PyObject *pyLSgetScenarioModel(PyObject *self, PyObject *args)
         pnErrorCode = (int *)PyArray_GetPtr(pyErrorCode,index);
 
     pModel = PyGetObjPtr(pyModel);
-    if(pModel == NULL)
+	if(pModel == NULL)
     {
         *pnErrorCode = LSERR_ILLEGAL_NULL_POINTER;
-        printf("Illegal NULL pointer (error %d)\n",*pnErrorCode);
-        return NULL;
+        char errStr[] = "Illegal NULL pointer";
+        LINDO_EXCEPTION(*pnErrorCode,errStr);
     }
 
     pSmodel = LSgetScenarioModel(pModel,jScenario,pnErrorCode);
@@ -8738,6 +9639,10 @@ PyObject *pyLSgetModelStocParameter(PyObject *self, PyObject *args)
 
     errorcode = LSgetModelStocParameter(pModel,nQuery,pvResult);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -8766,6 +9671,10 @@ PyObject *pyLSsetModelStocParameter(PyObject *self, PyObject *args)
         pvResult = (void *)PyArray_GetPtr(pyResult,index);
 
     errorcode = LSsetModelStocParameter(pModel,nQuery,pvResult);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -8796,6 +9705,10 @@ PyObject *pyLSsetEnvStocParameter(PyObject *self, PyObject *args)
 
     errorcode = LSsetEnvStocParameter(pEnv,nParameter,pvValue);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -8824,6 +9737,10 @@ PyObject *pyLSgetEnvStocParameter(PyObject *self, PyObject *args)
         pvValue = (void *)PyArray_GetPtr(pyValue,index);
 
     errorcode = LSgetEnvStocParameter(pEnv,nParameter,pvValue);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -8882,6 +9799,10 @@ PyObject *pyLSsampDelete(PyObject *self, PyObject *args)
 
     errorcode = LSsampDelete(&pSample);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -8905,6 +9826,10 @@ PyObject *pyLSsampSetDistrParam(PyObject *self, PyObject *args)
     CHECK_SAMPLE;
 
     errorcode = LSsampSetDistrParam(pSample,nIndex,dValue);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -8934,6 +9859,10 @@ PyObject *pyLSsampGetDistrParam(PyObject *self, PyObject *args)
         pdValue = (double *)PyArray_GetPtr(pyValue,index);
 
     errorcode = LSsampGetDistrParam(pSample,nIndex,pdValue);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -8966,6 +9895,10 @@ PyObject *pyLSsampEvalDistr(PyObject *self, PyObject *args)
 
     errorcode = LSsampEvalDistr(pSample,nFuncType,dXval,pdResult);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -8996,6 +9929,10 @@ PyObject *pyLSsampEvalDistrLI(PyObject *self, PyObject *args)
         pdResult = (double *)PyArray_GetPtr(pyResult,index);
 
     errorcode = LSsampEvalDistrLI(pSample,nFuncType,dXval,pdResult);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -9033,6 +9970,10 @@ PyObject *pyLSsampEvalUserDistr(PyObject *self, PyObject *args)
 
     errorcode = LSsampEvalUserDistr(pSample,nFuncType,padXval,nDim,pdResult);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -9055,6 +9996,10 @@ PyObject *pyLSsampSetRG(PyObject *self, PyObject *args)
     CHECK_RG;
 
     errorcode = LSsampSetRG(pSample,(void *)pRG);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -9079,6 +10024,10 @@ PyObject *pyLSsampGenerate(PyObject *self, PyObject *args)
     CHECK_SAMPLE;
 
     errorcode = LSsampGenerate(pSample,nMethod,nSize);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -9111,6 +10060,10 @@ PyObject *pyLSsampGetPoints(PyObject *self, PyObject *args)
 
     errorcode = LSsampGetPoints(pSample,pnSampSize,pdXval);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -9138,6 +10091,10 @@ PyObject *pyLSsampLoadPoints(PyObject *self, PyObject *args)
         pdXval = (double *)pyXval->data;
 
     errorcode = LSsampLoadPoints(pSample,nSampSize,pdXval);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -9170,6 +10127,10 @@ PyObject *pyLSsampGetCIPoints(PyObject *self, PyObject *args)
 
     errorcode = LSsampGetCIPoints(pSample,pnSampSize,pdXval);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -9201,6 +10162,10 @@ PyObject *pyLSsampLoadDiscretePdfTable(PyObject *self, PyObject *args)
         padVals = (double *)pyVals->data;
 
     errorcode = LSsampLoadDiscretePdfTable(pSample,nLen,padProb,padVals);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -9237,6 +10202,10 @@ PyObject *pyLSsampGetDiscretePdfTable(PyObject *self, PyObject *args)
 
     errorcode = LSsampGetDiscretePdfTable(pSample,pnLen,padProb,padVals);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -9265,6 +10234,10 @@ PyObject *pyLSsampGetInfo(PyObject *self, PyObject *args)
         pvResult = (void *)PyArray_GetPtr(pyResult,index);
 
     errorcode = LSsampGetInfo(pSample,nQuery,pvResult);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -9295,6 +10268,10 @@ PyObject *pyLSsampAddUserFuncArg(PyObject *self, PyObject *args)
     }
 
     errorcode = LSsampAddUserFuncArg(pSample,pSampleSource);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -9460,6 +10437,10 @@ PyObject *pyLSsetDistrParamRG(PyObject *self, PyObject *args)
 
     errorcode = LSsetDistrParamRG(pRG,iParam,dParam);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -9481,6 +10462,10 @@ PyObject *pyLSsetDistrRG(PyObject *self, PyObject *args)
     CHECK_RG;
 
     errorcode = LSsetDistrRG(pRG,nDistType);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -9508,6 +10493,10 @@ PyObject *pyLSgetDistrRV(PyObject *self, PyObject *args)
         pvResult = (void *)PyArray_GetPtr(pyResult,index);
 
     errorcode = LSgetDistrRV(pRG,pvResult);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -9556,6 +10545,10 @@ PyObject *pyLSgetRGNumThreads(PyObject *self, PyObject *args)
 
     errorcode = LSgetRGNumThreads(pRG,pnThreads);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -9575,6 +10568,10 @@ PyObject *pyLSfillRGBuffer(PyObject *self, PyObject *args)
     CHECK_RG;
 
     errorcode = LSfillRGBuffer(pRG);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -9653,6 +10650,10 @@ PyObject *pyLSgetHistogram(PyObject *self, PyObject *args)
                                padBinLeftEdge,
                                padBinRightEdge);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     return Py_BuildValue("i",errorcode);
 }
 
@@ -9683,6 +10684,10 @@ PyObject *pyLSsolveMipBnp(PyObject *self, PyObject *args)
         pnStatus = (int *)PyArray_GetPtr(pyStatus,index);
 
     errorcode = LSsolveMipBnp(pModel,nBlock,pszFname,pnStatus);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i",errorcode);
 }
@@ -9720,6 +10725,9 @@ PyObject *pyLSwriteMPXFile(PyObject *self, PyObject *args) {
 
     errorcode = LSwriteMPXFile(pModel, sbuf[2], ibuf[3]);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
 ErrorReturn:
     return Py_BuildValue(osig, errorcode);
@@ -10193,6 +11201,9 @@ PyObject *pyLSclearTuner(PyObject *self, PyObject *args) {
     // Get C pointers
     errorcode = LSclearTuner(pEnv);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
         //ErrorReturn:
         return Py_BuildValue(osig, errorcode);
 
@@ -10224,6 +11235,10 @@ PyObject *pyLSdisplayTunerResults(PyObject *self, PyObject *args) {
 
     // Get C pointers
     errorcode = LSdisplayTunerResults(pEnv);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
         //ErrorReturn:
         return Py_BuildValue(osig, errorcode);
@@ -10524,6 +11539,10 @@ PyObject *pyLSprintTuner(PyObject *self, PyObject *args) {
     // Get C pointers
     errorcode = LSprintTuner(pEnv);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
         //ErrorReturn:
         return Py_BuildValue(osig, errorcode);
 
@@ -10556,6 +11575,10 @@ PyObject *pyLSresetTuner(PyObject *self, PyObject *args) {
     // Get C pointers
     errorcode = LSresetTuner(pEnv);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
         //ErrorReturn:
         return Py_BuildValue(osig, errorcode);
 
@@ -10587,6 +11610,10 @@ PyObject *pyLSrunTuner(PyObject *self, PyObject *args) {
 
     // Get C pointers
     errorcode = LSrunTuner(pEnv);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
         //ErrorReturn:
         return Py_BuildValue(osig, errorcode);
@@ -11323,6 +12350,10 @@ PyObject *pyLSbuildStringData(PyObject *self, PyObject *args) {
     // Get C pointers
     errorcode = LSbuildStringData(pModel);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
     //ErrorReturn:
     return Py_BuildValue(osig, errorcode);
 
@@ -11651,6 +12682,10 @@ PyObject *pyLSdeleteString(PyObject *self, PyObject *args) {
     // Get C pointers
     errorcode = LSdeleteString(pModel);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
         //ErrorReturn:
         return Py_BuildValue(osig, errorcode);
 
@@ -11686,6 +12721,10 @@ PyObject *pyLSdeleteStringData(PyObject *self, PyObject *args) {
 
     // Get C pointers
     errorcode = LSdeleteStringData(pModel);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
         //ErrorReturn:
         return Py_BuildValue(osig, errorcode);
@@ -12106,6 +13145,10 @@ PyObject *pyLSfreeObjPool(PyObject *self, PyObject *args) {
     // Get C pointers
     errorcode = LSfreeObjPool(pModel);
 
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
         //ErrorReturn:
         return Py_BuildValue(osig, errorcode);
 
@@ -12199,6 +13242,10 @@ PyObject *pyLSdeleteSymmetry(PyObject *self, PyObject *args)
     CHECK_OBJ_NO_FAIL(ptr, pyObj)
 
     errorcode = LSdeleteSymmetry(ptr);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i", errorcode);
 }
@@ -12910,6 +13957,10 @@ PyObject *pyLSgetMIPCallbackInfo(PyObject *self, PyObject *args) {
         pvResult = (void *)PyArray_GetPtr(pyResult, index);
 
     errorcode = LSgetMIPCallbackInfo(pModel, nQuery, pvResult);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
 
     return Py_BuildValue("i", errorcode);
 
@@ -14206,7 +15257,11 @@ PyObject *pyLSregress(PyObject *self, PyObject *args) {
         , dvecptr[9]); //*padstats
 
 
-                       //ErrorReturn:
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
+    //ErrorReturn:
     return Py_BuildValue(osig, errorcode);
 
 }

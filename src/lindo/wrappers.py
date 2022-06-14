@@ -2,13 +2,12 @@ from .LSconst import *
 from .lindo import *
 import numpy as N
 
-def geterrormessage(pEnv, errorcode):
-    if errorcode != LSERR_NO_ERROR:
-        errormessage = N.array('', dtype='S256')
-        pyLSgetErrorMessage(pEnv, errorcode, errormessage)
-        print("Error:", errorcode, errormessage)
-        pyLSdeleteEnv(pEnv)
-        exit(1)
+def geterrormessage(pEnv, errorcode):    
+    errormessage = N.array('', dtype='S256')
+    pyLSgetErrorMessage(pEnv, errorcode, errormessage)
+    errormessage = str(errormessage)[2:-1]
+    print(f"{errorcode} => {errormessage}")
+
 
 
 def getversion(pEnv):
