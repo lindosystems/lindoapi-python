@@ -53,240 +53,179 @@ import numpy as np
 import os
 
 
-mpiFn = "smpi/putoption.mpi"
-open(mpiFn)
-#create LINDO environment and model objects
-LicenseKey = np.array('',dtype='S1024')
-lindo.pyLSloadLicenseString(os.getenv('LINDOAPI_HOME')+'/license/lndapi130.lic',LicenseKey)
-pnErrorCode = np.array([-1],dtype=np.int32)
-pEnv = lindo.pyLScreateEnv(pnErrorCode,LicenseKey)
 
-pModel = lindo.pyLScreateModel(pEnv,pnErrorCode)
-lindo.geterrormessage(pEnv,pnErrorCode[0])
 
-errorcode = lindo.pyLSsetModelIntParameter(pModel,
-                                           lindo.LS_IPARAM_NLP_LINEARZ,1)
-lindo.geterrormessage(pEnv,errorcode)
-print()
-errorcode = lindo.pyLSreadMPIFile(pModel,mpiFn)
-lindo.geterrormessage(pEnv,errorcode)
+# The first try block is for catching errors rasied while creating an environment
+try:
+    #create LINDO environment and model objects
+    LicenseKey = np.array('',dtype='S1024')
+    lindo.pyLSloadLicenseString(os.getenv('LINDOAPI_HOME')+'/license/lndapi130.lic',LicenseKey)
+    pnErrorCode = np.array([-1],dtype=np.int32)
+    pEnv = lindo.pyLScreateEnv(pnErrorCode,LicenseKey)
+except lindo.LINDO_Exception as e:
+    print(e.args[0])
+    exit(1)
 
-#Load stage/time structure for rows,columns and stochastic params
-numStages = 6
-colStages = np.array([5,0,1,2,3,4,5,0,0,1,1,2,2,3,3,4,4,5,-1],dtype=np.int32)
-rowStages = np.array([0,1,3,5,2,4,0,2,4,1,3,5,5,-1],dtype=np.int32)
-panSparStage = np.array([1,2,3,4,5,-1],dtype=np.int32)
-padSparValue = np.array([0,0,0,0,0,-1],dtype=np.double)
-errorcode = lindo.pyLSloadStageData(pModel,numStages,
-                                    rowStages,colStages)
-lindo.geterrormessage(pEnv,errorcode)
+try:       
+    pModel = lindo.pyLScreateModel(pEnv,pnErrorCode)
 
-errorcode = lindo.pyLSloadStocParData(pModel,panSparStage,padSparValue)
-lindo.geterrormessage(pEnv,errorcode)
+ 
 
-#Load stochastic data
-iStage = 1
-nBlockEvents = 4
-iModifyRule = lindo.LS_REPLACE
-padProb = np.array([0.25,0.25,0.25,0.25,-1],dtype=np.double)
-pakStart = np.array([0,1,2,3,4,-1],dtype=np.int32)
-paiRows = np.asarray(None)
-paiCols = np.asarray(None)
-paiStvs = np.array([0,0,0,0,-1],dtype=np.int32)
-padVals = np.array([-0.08,0.01,0.07,0.11,-1],dtype=np.double)
-errorcode = lindo.pyLSaddDiscreteBlocks(pModel,iStage,
-                                        nBlockEvents,padProb,
-                                        pakStart,paiRows,
-                                        paiCols,paiStvs,
-                                        padVals,iModifyRule)
-lindo.geterrormessage(pEnv,errorcode)
+    mpiFn = "smpi/putoption.mpi"
+    lindo.pyLSreadMPIFile(pModel,mpiFn)
 
-iStage = 2
-nBlockEvents = 2
-iModifyRule = lindo.LS_REPLACE
-padProb = np.array([0.5,0.5,-1],dtype=np.double)
-pakStart = np.array([0,1,2,-1],dtype=np.int32)
-paiRows = np.asarray(None)
-paiCols = np.asarray(None)
-paiStvs = np.array([1,1,-1],dtype=np.int32)
-padVals = np.array([-0.08,0.01,-1],dtype=np.double)
-errorcode = lindo.pyLSaddDiscreteBlocks(pModel,iStage,
-                                        nBlockEvents,padProb,
-                                        pakStart,paiRows,
-                                        paiCols,paiStvs,
-                                        padVals,iModifyRule)
-lindo.geterrormessage(pEnv,errorcode)
 
-iStage = 3
-nBlockEvents = 2
-iModifyRule = lindo.LS_REPLACE
-padProb = np.array([0.5,0.5,-1],dtype=np.double)
-pakStart = np.array([0,1,2,-1],dtype=np.int32)
-paiRows = np.asarray(None)
-paiCols = np.asarray(None)
-paiStvs = np.array([2,2,-1],dtype=np.int32)
-padVals = np.array([0.07,0.11,-1],dtype=np.double)
-errorcode = lindo.pyLSaddDiscreteBlocks(pModel,iStage,
-                                        nBlockEvents,padProb,
-                                        pakStart,paiRows,
-                                        paiCols,paiStvs,
-                                        padVals,iModifyRule)
-lindo.geterrormessage(pEnv,errorcode)
+    #Load stage/time structure for rows,columns and stochastic params
+    numStages = 6
+    colStages = np.array([5,0,1,2,3,4,5,0,0,1,1,2,2,3,3,4,4,5,-1],dtype=np.int32)
+    rowStages = np.array([0,1,3,5,2,4,0,2,4,1,3,5,5,-1],dtype=np.int32)
+    panSparStage = np.array([1,2,3,4,5,-1],dtype=np.int32)
+    padSparValue = np.array([0,0,0,0,0,-1],dtype=np.double)
+    lindo.pyLSloadStageData(pModel,numStages, rowStages,colStages)
+    lindo.pyLSloadStocParData(pModel,panSparStage,padSparValue)
 
-iStage = 4
-nBlockEvents = 2
-iModifyRule = lindo.LS_REPLACE
-padProb = np.array([0.5,0.5,-1],dtype=np.double)
-pakStart = np.array([0,1,2,-1],dtype=np.int32)
-paiRows = np.asarray(None)
-paiCols = np.asarray(None)
-paiStvs = np.array([3,3,-1],dtype=np.int32)
-padVals = np.array([0.01,0.11,-1],dtype=np.double)
-errorcode = lindo.pyLSaddDiscreteBlocks(pModel,iStage,
-                                        nBlockEvents,padProb,
-                                        pakStart,paiRows,
-                                        paiCols,paiStvs,
-                                        padVals,iModifyRule)
-lindo.geterrormessage(pEnv,errorcode)
 
-iStage = 5
-nBlockEvents = 2
-iModifyRule = lindo.LS_REPLACE
-padProb = np.array([0.5,0.5,-1],dtype=np.double)
-pakStart = np.array([0,1,2,-1],dtype=np.int32)
-paiRows = np.asarray(None)
-paiCols = np.asarray(None)
-paiStvs = np.array([4,4,-1],dtype=np.int32)
-padVals = np.array([-0.08,0.07,-1],dtype=np.double)
-errorcode = lindo.pyLSaddDiscreteBlocks(pModel,iStage,
-                                        nBlockEvents,padProb,
-                                        pakStart,paiRows,
-                                        paiCols,paiStvs,
-                                        padVals,iModifyRule)
-lindo.geterrormessage(pEnv,errorcode)
+    #Load stochastic data
+    iStage = 1
+    nBlockEvents = 4
+    iModifyRule = lindo.LS_REPLACE
+    padProb = np.array([0.25,0.25,0.25,0.25,-1],dtype=np.double)
+    pakStart = np.array([0,1,2,3,4,-1],dtype=np.int32)
+    paiRows = np.asarray(None)
+    paiCols = np.asarray(None)
+    paiStvs = np.array([0,0,0,0,-1],dtype=np.int32)
+    padVals = np.array([-0.08,0.01,0.07,0.11,-1],dtype=np.double)
+    lindo.pyLSaddDiscreteBlocks(pModel,iStage, nBlockEvents,padProb,
+                                pakStart,paiRows, paiCols,paiStvs,
+                                padVals,iModifyRule)
 
-#Get and display SP statistics
-numVars = np.array([-1],dtype=np.int32)
-errorcode = lindo.pyLSgetInfo(pModel,
-                              lindo.LS_IINFO_NUM_VARS,
-                              numVars)
-lindo.geterrormessage(pEnv,errorcode)
+    iStage = 2
+    nBlockEvents = 2
+    iModifyRule = lindo.LS_REPLACE
+    padProb = np.array([0.5,0.5,-1],dtype=np.double)
+    pakStart = np.array([0,1,2,-1],dtype=np.int32)
+    paiRows = np.asarray(None)
+    paiCols = np.asarray(None)
+    paiStvs = np.array([1,1,-1],dtype=np.int32)
+    padVals = np.array([-0.08,0.01,-1],dtype=np.double)
+    lindo.pyLSaddDiscreteBlocks(pModel,iStage, nBlockEvents,padProb, pakStart,paiRows,
+                                paiCols,paiStvs, padVals,iModifyRule)
 
-numCons = np.array([-1],dtype=np.int32)
-errorcode = lindo.pyLSgetInfo(pModel,
-                              lindo.LS_IINFO_NUM_CONS,
-                              numCons)
-lindo.geterrormessage(pEnv,errorcode)
+    iStage = 3
+    nBlockEvents = 2
+    iModifyRule = lindo.LS_REPLACE
+    padProb = np.array([0.5,0.5,-1],dtype=np.double)
+    pakStart = np.array([0,1,2,-1],dtype=np.int32)
+    paiRows = np.asarray(None)
+    paiCols = np.asarray(None)
+    paiStvs = np.array([2,2,-1],dtype=np.int32)
+    padVals = np.array([0.07,0.11,-1],dtype=np.double)
+    lindo.pyLSaddDiscreteBlocks(pModel,iStage, nBlockEvents,padProb, pakStart,paiRows,
+                                paiCols, paiStvs, padVals, iModifyRule)
 
-numCont = np.array([-1],dtype=np.int32)
-errorcode = lindo.pyLSgetInfo(pModel,
-                              lindo.LS_IINFO_NUM_CONT,
-                              numCont)
-lindo.geterrormessage(pEnv,errorcode)
 
-numStocPars = np.array([-1],dtype=np.int32)
-errorcode = lindo.pyLSgetInfo(pModel,
-                              lindo.LS_IINFO_NUM_SPARS,
-                              numStocPars)
-lindo.geterrormessage(pEnv,errorcode)
+    iStage = 4
+    nBlockEvents = 2
+    iModifyRule = lindo.LS_REPLACE
+    padProb = np.array([0.5,0.5,-1],dtype=np.double)
+    pakStart = np.array([0,1,2,-1],dtype=np.int32)
+    paiRows = np.asarray(None)
+    paiCols = np.asarray(None)
+    paiStvs = np.array([3,3,-1],dtype=np.int32)
+    padVals = np.array([0.01,0.11,-1],dtype=np.double)
+    lindo.pyLSaddDiscreteBlocks(pModel,iStage, nBlockEvents,padProb, pakStart,
+                                paiRows, paiCols,paiStvs, padVals,iModifyRule)
 
-numStages = np.array([-1],dtype=np.int32)
-errorcode = lindo.pyLSgetStocInfo(pModel,
-                                  lindo.LS_IINFO_STOC_NUM_STAGES,
-                                  0,
-                                  numStages)
-lindo.geterrormessage(pEnv,errorcode)
+    iStage = 5
+    nBlockEvents = 2
+    iModifyRule = lindo.LS_REPLACE
+    padProb = np.array([0.5,0.5,-1],dtype=np.double)
+    pakStart = np.array([0,1,2,-1],dtype=np.int32)
+    paiRows = np.asarray(None)
+    paiCols = np.asarray(None)
+    paiStvs = np.array([4,4,-1],dtype=np.int32)
+    padVals = np.array([-0.08,0.07,-1],dtype=np.double)
+    lindo.pyLSaddDiscreteBlocks(pModel,iStage, nBlockEvents,padProb,pakStart,paiRows,
+                                paiCols,paiStvs, padVals,iModifyRule)
 
-numNodes = np.array([-1],dtype=np.int32)
-errorcode = lindo.pyLSgetStocInfo(pModel,
-                                  lindo.LS_IINFO_STOC_NUM_NODES,
-                                  0,
-                                  numNodes)
-lindo.geterrormessage(pEnv,errorcode)
 
-numScens = np.array([-1],dtype=np.int32)
-errorcode = lindo.pyLSgetStocInfo(pModel,
-                                  lindo.LS_IINFO_STOC_NUM_SCENARIOS,
-                                  0,
-                                  numScens)
-lindo.geterrormessage(pEnv,errorcode)
+    #Get and display SP statistics
+    numVars = np.array([-1],dtype=np.int32)
+    lindo.pyLSgetInfo(pModel, lindo.LS_IINFO_NUM_VARS, numVars)
 
-numDeqRows = np.array([-1],dtype=np.int32)
-errorcode = lindo.pyLSgetStocInfo(pModel,
-                                  lindo.LS_IINFO_STOC_NUM_ROWS_DETEQI,
-                                  0,
-                                  numDeqRows)
-lindo.geterrormessage(pEnv,errorcode)
+    numCons = np.array([-1],dtype=np.int32)
+    lindo.pyLSgetInfo(pModel, lindo.LS_IINFO_NUM_CONS, numCons)
 
-numDeqCols = np.array([-1],dtype=np.int32)
-errorcode = lindo.pyLSgetStocInfo(pModel,
-                                  lindo.LS_IINFO_STOC_NUM_COLS_DETEQI,
-                                  0,
-                                  numDeqCols)
-lindo.geterrormessage(pEnv,errorcode)
+    numCont = np.array([-1],dtype=np.int32)
+    lindo.pyLSgetInfo(pModel, lindo.LS_IINFO_NUM_CONT, numCont)
 
-numCoreRows = np.array([-1],dtype=np.int32)
-errorcode = lindo.pyLSgetStocInfo(pModel,
-                                  lindo.LS_IINFO_STOC_NUM_ROWS_CORE,
-                                  0,
-                                  numCoreRows)
-lindo.geterrormessage(pEnv,errorcode)
+    numStocPars = np.array([-1],dtype=np.int32)
+    lindo.pyLSgetInfo(pModel, lindo.LS_IINFO_NUM_SPARS, numStocPars)
 
-numCoreCols = np.array([-1],dtype=np.int32)
-errorcode = lindo.pyLSgetStocInfo(pModel,
-                                  lindo.LS_IINFO_STOC_NUM_COLS_CORE,
-                                  0,
-                                  numCoreCols)
-lindo.geterrormessage(pEnv,errorcode)
+    numStages = np.array([-1],dtype=np.int32)
+    lindo.pyLSgetStocInfo(pModel, lindo.LS_IINFO_STOC_NUM_STAGES, 0, numStages)
 
-print("\nStochastic Model Stats:");
-print("Number of stages = %d" %numStages[0])
-print("Number of nodes = %d" %numNodes[0])
-print("Number of scenarios = %d" %numScens[0])
-print("Core model (rows,cols) = (%d,%d)" %(numCoreRows[0],numCoreCols[0]))
-print("")
+    numNodes = np.array([-1],dtype=np.int32)
+    lindo.pyLSgetStocInfo(pModel, lindo.LS_IINFO_STOC_NUM_NODES, 0, numNodes)
 
-numStageRows = np.array([-1],dtype=np.int32)
-numStageCols = np.array([-1],dtype=np.int32)
-for i in range(0,numStages[0]):
-    lindo.pyLSgetStocInfo(pModel,
-                          lindo.LS_IINFO_STOC_NUM_ROWS_STAGE,
-                          i,
-                          numStageRows)
-    lindo.pyLSgetStocInfo(pModel,
-                          lindo.LS_IINFO_STOC_NUM_COLS_STAGE,
-                          i,
-                          numStageCols)
-    print("Core model (rows,col) in stage %d: (%d,%d)" 
-          %(i,numStageRows,numStageCols))
+    numScens = np.array([-1],dtype=np.int32)
+    lindo.pyLSgetStocInfo(pModel, lindo.LS_IINFO_STOC_NUM_SCENARIOS,0, numScens)
 
-print("Deterministic eq. (rows,col) = (%d,%d)\n"
-      %(numDeqRows[0],numDeqCols[0]))
+    numDeqRows = np.array([-1],dtype=np.int32)
+    lindo.pyLSgetStocInfo(pModel, lindo.LS_IINFO_STOC_NUM_ROWS_DETEQI, 0, numDeqRows)
 
-#Solve the SP
-nStatus = np.array([-1],dtype=np.int32)
-errorcode = lindo.pyLSsolveSP(pModel,nStatus);
-lindo.geterrormessage(pEnv,errorcode)
+    numDeqCols = np.array([-1],dtype=np.int32)
+    lindo.pyLSgetStocInfo(pModel, lindo.LS_IINFO_STOC_NUM_COLS_DETEQI,0,numDeqCols)
 
-#Access the final solution if optimal or feasible
-if (nStatus[0] == lindo.LS_STATUS_OPTIMAL or
-   nStatus[0] == lindo.LS_STATUS_BASIC_OPTIMAL or
-   nStatus[0] == lindo.LS_STATUS_LOCAL_OPTIMAL or
-   nStatus[0] == lindo.LS_STATUS_FEASIBLE):
-       dObj = np.array([-1.0],dtype=np.double)
-       errorcode = lindo.pyLSgetStocInfo(pModel,
-                                          lindo.LS_DINFO_STOC_EVOBJ,
-                                          0,
-                                          dObj)
-       print("Objective  = %f" %dObj[0])
-else:
-    print("Optimization failed. nStatus = %d" %nStatus[0])
+    numCoreRows = np.array([-1],dtype=np.int32)
+    lindo.pyLSgetStocInfo(pModel, lindo.LS_IINFO_STOC_NUM_ROWS_CORE,0, numCoreRows)
 
-#delete LINDO model pointer
-errorcode = lindo.pyLSdeleteModel(pModel)
-lindo.geterrormessage(pEnv,errorcode)
+    numCoreCols = np.array([-1],dtype=np.int32)
+    lindo.pyLSgetStocInfo(pModel, lindo.LS_IINFO_STOC_NUM_COLS_CORE, 0, numCoreCols)
 
-#delete LINDO environment pointer
-errorcode = lindo.pyLSdeleteEnv(pEnv)
-lindo.geterrormessage(pEnv,errorcode)
+    print("\nStochastic Model Stats:")
+    print(f"Number of stages = {numStages[0]}")
+    print(f"Number of nodes = {numNodes[0]}")
+    print(f"Number of scenarios = {numScens[0]}")
+    print(f"Core model (rows,cols) = ({numCoreRows[0]},{numCoreCols[0]})\n")
+
+    numStageRows = np.array([-1],dtype=np.int32)
+    numStageCols = np.array([-1],dtype=np.int32)
+    for i in range(0,numStages[0]):
+        lindo.pyLSgetStocInfo(pModel, lindo.LS_IINFO_STOC_NUM_ROWS_STAGE, i, numStageRows)
+        lindo.pyLSgetStocInfo(pModel, lindo.LS_IINFO_STOC_NUM_COLS_STAGE, i, numStageCols)
+        print(f"Core model (rows,col) in stage {i}: ({numStageRows},{numStageCols})")
+
+    print(f"Deterministic eq. (rows,col) = ({numDeqRows[0]},{numDeqCols[0]})\n")
+
+    noLinearization = 1
+    lindo.pyLSsetModelIntParameter(pModel, lindo.LS_IPARAM_NLP_LINEARZ, noLinearization)
+    
+    #Solve the SP
+    nStatus = np.array([-1],dtype=np.int32)
+    lindo.pyLSsolveSP(pModel,nStatus)
+
+    #Access the final solution if optimal or feasible
+    if (nStatus[0] == lindo.LS_STATUS_OPTIMAL or
+        nStatus[0] == lindo.LS_STATUS_BASIC_OPTIMAL or
+        nStatus[0] == lindo.LS_STATUS_LOCAL_OPTIMAL or
+        nStatus[0] == lindo.LS_STATUS_FEASIBLE
+        ):
+        dObj = np.array([-1.0],dtype=np.double)
+        lindo.pyLSgetStocInfo(pModel, lindo.LS_DINFO_STOC_EVOBJ, 0, dObj)
+
+        print(f"Objective  = {dObj[0]:.5f}")
+    else:
+        print(f"Optimization failed. nStatus = {nStatus[0]}" )
+
+    #delete LINDO model pointer
+    lindo.pyLSdeleteModel(pModel)
+
+    #delete LINDO environment pointer
+    lindo.pyLSdeleteEnv(pEnv)
+
+except lindo.LINDO_Exception as e:
+    lindo.geterrormessage(pEnv, e.args[1])
+except Exception as e:
+    print(f"Other Error => {e}")
 

@@ -32,68 +32,67 @@ pdLower = np.array([0,0,0,0,0,0],dtype=np.double)
 pdUpper = np.array([1.,1.,1.,1.,1.,1.],dtype=np.double)
 pachVarType = np.array(['B','B','B','B','B','B'],dtype='|S1')
 
-#create LINDO environment and model objects
-LicenseKey = np.array('',dtype='S1024')
-lindo.pyLSloadLicenseString(os.getenv('LINDOAPI_HOME')+'/license/lndapi130.lic',LicenseKey)
 pnErrorCode = np.array([-1],dtype=np.int32)
-pEnv = lindo.pyLScreateEnv(pnErrorCode,LicenseKey)
 
-pModel = lindo.pyLScreateModel(pEnv,pnErrorCode)
-lindo.geterrormessage(pEnv,pnErrorCode[0])
+try:
+    #create LINDO environment and model objects
+    LicenseKey = np.array('',dtype='S1024')
+    lindo.pyLSloadLicenseString(os.getenv('LINDOAPI_HOME')+'/license/lndapi130.lic',LicenseKey)
+    pEnv = lindo.pyLScreateEnv(pnErrorCode,LicenseKey)
+    pModel = lindo.pyLScreateModel(pEnv,pnErrorCode)
+except lindo.LINDO_Exception as e:
+    print(e.args[0])
+    exit(1)
 
-#load data into the model
-print("Loading LP data...")
-errorcode = lindo.pyLSloadLPData(pModel,nCons,nVars,nDir,
-                                 dObjConst,adC,adB,acConTypes,nNZ,anBegCol,
-                                 pnLenCol,adA,anRowX,pdLower,pdUpper)
-lindo.geterrormessage(pEnv,errorcode)
+try:
+    #load data into the model
+    print("Loading LP data...")
+    lindo.pyLSloadLPData(pModel,nCons,nVars,nDir,
+                                    dObjConst,adC,adB,acConTypes,nNZ,anBegCol,
+                                    pnLenCol,adA,anRowX,pdLower,pdUpper)
 
-errorcode = lindo.pyLSloadVarType(pModel,pachVarType)
+    lindo.pyLSloadVarType(pModel,pachVarType)
 
-#load block structure
-panRblock = np.array([0,1,1,2,2],dtype=np.int32)
-panCblock = np.array([1,1,1,2,2,2],dtype=np.int32)
-nBlock = 2
-nType = lindo.LS_LINK_BLOCKS_FREE
-errorcode = lindo.pyLSloadBlockStructure(pModel,
-                                         nBlock + 1,
-                                         panRblock,
-                                         panCblock,
-                                         nType)
-lindo.geterrormessage(pEnv,errorcode)
+    #load block structure
+    panRblock = np.array([0,1,1,2,2],dtype=np.int32)
+    panCblock = np.array([1,1,1,2,2,2],dtype=np.int32)
+    nBlock = 2
+    nType = lindo.LS_LINK_BLOCKS_FREE
+    lindo.pyLSloadBlockStructure(pModel,
+                                nBlock + 1,
+                                panRblock,
+                                panCblock,
+                                nType)
 
-#set the method for finding block
-nMethod = 5
-errorcode = lindo.pyLSsetModelIntParameter(pModel,
-                                           lindo.LS_IPARAM_BNP_FIND_BLK,
-                                           nMethod)
-lindo.geterrormessage(pEnv,errorcode)
 
-#solve the model using BNP
-print("\nSolving the model...")
-pnStatus = np.array([-1],dtype=np.int32)
-errorcode = lindo.pyLSsolveMipBnp(pModel,nBlock,"ddd",pnStatus)
-lindo.geterrormessage(pEnv,errorcode)
+    #set the method for finding block
+    nMethod = 1 # Use a heuristic to find the block structure
+    lindo.pyLSsetModelIntParameter(pModel,
+                                lindo.LS_IPARAM_BNP_FIND_BLK,
+                                nMethod)
 
-#retrieve the objective value
-dObj = np.array([-1.0],dtype=np.double)
-errorcode = lindo.pyLSgetInfo(pModel,lindo.LS_DINFO_MIP_OBJ,dObj)
-lindo.geterrormessage(pEnv,errorcode)
-print("Objective is: %.5f" %dObj[0])
-print("")
+    #solve the model using BNP
+    print("\nSolving the model...")
+    pnStatus = np.array([-1],dtype=np.int32)
+    lindo.pyLSsolveMipBnp(pModel,nBlock,"",pnStatus)
 
-#retrieve the primal solution
-padPrimal = np.empty((nVars),dtype=np.double)
-errorcode = lindo.pyLSgetMIPPrimalSolution(pModel,padPrimal)
-lindo.geterrormessage(pEnv,errorcode)
-print("Primal solution is: ")
-for x in padPrimal: print("%.5f" % x)
+    #retrieve the objective value
+    dObj = np.array([-1.0],dtype=np.double)
+    lindo.pyLSgetInfo(pModel,lindo.LS_DINFO_MIP_OBJ,dObj)
+    print(f"Objective is: {dObj[0]:.5f}\n")
 
-#delete LINDO model pointer
-errorcode = lindo.pyLSdeleteModel(pModel)
-lindo.geterrormessage(pEnv,errorcode)
+    #retrieve the primal solution
+    padPrimal = np.empty((nVars),dtype=np.double)
+    lindo.pyLSgetMIPPrimalSolution(pModel,padPrimal)
+    print("Primal solution is: ")
+    for x in padPrimal: print(f"{x:.5f}")
 
-#delete LINDO environment pointer
-errorcode = lindo.pyLSdeleteEnv(pEnv)
-lindo.geterrormessage(pEnv,errorcode)
+    #delete LINDO model pointer
+    lindo.pyLSdeleteModel(pModel)
+    #delete LINDO environment pointer
+    lindo.pyLSdeleteEnv(pEnv)
 
+except lindo.LINDO_Exception as e:
+    lindo.geterrormessage(pEnv, e.args[1])
+except Exception as e:
+    print(f"Other Error => {e}")

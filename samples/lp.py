@@ -33,9 +33,7 @@ anRowX = np.array([0,2,1,2,3,2,3,0,1],dtype=np.int32)
 pdLower = np.array([2,1,-lindo.LS_INFINITY,-lindo.LS_INFINITY],dtype=np.double)
 pdUpper = np.array([5,lindo.LS_INFINITY,10,lindo.LS_INFINITY],dtype=np.double)
 
-pnErrorCode = np.array([-1],dtype=np.int32)
-
-# The first try block is for catching errors raised while creating an environment
+# The first try block is for catching errors rasied while creating an environment
 try:
     #create LINDO environment and model objects
     LicenseKey = np.array('',dtype='S1024')
@@ -46,7 +44,7 @@ except lindo.LINDO_Exception as e:
     print(e.args[0])
     exit(1)
 
-# The Second try block is to catch errors raised for the allocated LINDO environment
+# The Second try block is to catch errors rasied for the allocated LINDO enviroment
 try:
     pModel = lindo.pyLScreateModel(pEnv,pnErrorCode)
 
@@ -56,7 +54,6 @@ try:
     lindo.pyLSloadLPData(pModel,nCons,nVars,nDir,
                                     dObjConst,adC,adB,acConTypes,nNZ,anBegCol,
                                     pnLenCol,adA,anRowX,pdLower,pdUpper)
-
 
     #solve the model
     print("Solving the model...")
@@ -88,4 +85,5 @@ try:
 
 except lindo.LINDO_Exception as e:
     lindo.geterrormessage(pEnv, e.args[1])
-
+except Exception as e:
+    print(f"Other Error => {e}")

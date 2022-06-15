@@ -7,6 +7,8 @@
 import lindo
 import numpy as np
 import os
+
+#Build instruction-list
 #Number of constraints
 ncons = 1
 #Number of variables
@@ -30,7 +32,8 @@ ikod = 0
 iobj = 0
 #Count for constraint row
 icon = 0
-
+# optional (paiVars)
+varindex =  np.asarray(None)
 #Instruction code of the objective
 objsense = np.empty((10),dtype=np.int32)
 objs_beg = np.empty((10),dtype=np.int32)
@@ -67,106 +70,84 @@ iobj = iobj + 1
 #Constraint type
 ctype = np.array(['E'],dtype='|S1')
 #Beginning position of constraint 0
-cons_beg[icon] = ikod;
+cons_beg[icon] = ikod
 #Instruction list code
-code[ikod] = lindo.EP_PUSH_VAR;
+code[ikod] = lindo.EP_PUSH_VAR
 ikod = ikod + 1
-code[ikod] = 1;
+code[ikod] = 1
 ikod = ikod + 1
 
 #Length of constraint 0
-cons_length[icon] = ikod - cons_beg[icon];
-icon = icon + 1;
+cons_length[icon] = ikod - cons_beg[icon]
+icon = icon + 1
 
 #Total number of items in the instruction list
 lsize = ikod
 
-#create LINDO environment and model objects
-LicenseKey = np.array('',dtype='S1024')
-lindo.pyLSloadLicenseString(os.getenv('LINDOAPI_HOME')+'/license/lndapi130.lic',LicenseKey)
-pnErrorCode = np.array([-1],dtype=np.int32)
-pEnv = lindo.pyLScreateEnv(pnErrorCode,LicenseKey)
+# The first try block is for catching errors rasied while creating an environment
+try:
+    #create LINDO environment and model objects
+    LicenseKey = np.array('',dtype='S1024')
+    lindo.pyLSloadLicenseString(os.getenv('LINDOAPI_HOME')+'/license/lndapi130.lic',LicenseKey)
+    pnErrorCode = np.array([-1],dtype=np.int32)
+    pEnv = lindo.pyLScreateEnv(pnErrorCode,LicenseKey)
+except lindo.LINDO_Exception as e:
+    print(e.args[0])
+    exit(1)
 
-pModel = lindo.pyLScreateModel(pEnv,pnErrorCode)
-lindo.geterrormessage(pEnv,pnErrorCode[0])
+# The Second try block is to catch errors rasied for the allocated LINDO enviroment
+try:
+    pModel = lindo.pyLScreateModel(pEnv,pnErrorCode)
 
-#Set linearization level, before a call to LSloadNLPCode.
-#If not specified, the solver will decide
-nLinearz = 1;
-
-errorcode = lindo.pyLSsetModelIntParameter(pModel,
-                                           lindo.LS_IPARAM_NLP_LINEARZ,
-                                           nLinearz);
-lindo.geterrormessage(pEnv,errorcode)
-
-#Select algebraic reformulation level in convex relaxation
-nCRAlgReform = 1;
-errorcode = lindo.pyLSsetModelIntParameter(pModel,
-                                           lindo.LS_IPARAM_NLP_CR_ALG_REFORM,
-                                           nCRAlgReform);
-lindo.geterrormessage(pEnv,errorcode)
-
-#Select convex relax level
-nConvexRelax = 0;
-errorcode = lindo.pyLSsetModelIntParameter(pModel,
-                                           lindo.LS_IPARAM_NLP_CONVEXRELAX,
-                                           nConvexRelax);
-lindo.geterrormessage(pEnv,errorcode)
+    #Set linearization level, before a call to LSloadNLPCode.
+    nLinearz = 1 # No linearization occurs
+    lindo.pyLSsetModelIntParameter(pModel,
+                                   lindo.LS_IPARAM_NLP_LINEARZ,
+                                   nLinearz)
 
 
-#Set up automatic differentiation, before a call to LSloadNLPCode.
-#If not specified, the numerical derivative will be applied
-nAutoDeriv = 1;
-errorcode = lindo.pyLSsetModelIntParameter(pModel,
-                                           lindo.LS_IPARAM_NLP_AUTODERIV,
-                                           nAutoDeriv);
-lindo.geterrormessage(pEnv,errorcode)
-
-#Load instruction list
-print("Loading instruction list...")
-varindex =  np.asarray(None)
-errorcode = lindo.pyLSloadInstruct(pModel, ncons, nobjs, nvars, nnums,
-                                   objsense, ctype,  vtype, code, lsize,
-                                   varindex,numval, varval, objs_beg, objs_length,
-                                   cons_beg,cons_length, lwrbnd, uprbnd);
-lindo.geterrormessage(pEnv,errorcode)
-
-errorcode = lindo.pyLSsetModelIntParameter(pModel,
-                                           lindo.LS_IPARAM_LP_PRINTLEVEL,0);
-lindo.geterrormessage(pEnv,errorcode)
-
-errorcode = lindo.pyLSsetModelIntParameter(pModel,
-                                           lindo.LS_IPARAM_GOP_PRINTLEVEL,1);
-lindo.geterrormessage(pEnv,errorcode)
-
-#solve the model
-print("Solving the model...")
-pnStatus = np.array([-1],dtype=np.int32)
-errorcode = lindo.pyLSsolveGOP(pModel, pnStatus);
-lindo.geterrormessage(pEnv,errorcode)
-print("Solution status: %d" %pnStatus[0])
-print("")
+    #Set up automatic differentiation, before a call to LSloadNLPCode.
+    nAutoDeriv = 1 # Forward automatic differentiation
+    lindo.pyLSsetModelIntParameter(pModel,
+                                   lindo.LS_IPARAM_NLP_AUTODERIV,
+                                   nAutoDeriv)
 
 
-#retrieve the objective value
-dObj = np.array([-1.0],dtype=np.double)
-errorcode = lindo.pyLSgetInfo(pModel,lindo.LS_DINFO_POBJ,dObj)
-lindo.geterrormessage(pEnv,errorcode)
-print("Objective is: %.5f" %dObj[0])
-print("")
+    #Load instruction list
+    print("Loading instruction list...")
+    
+    lindo.pyLSloadInstruct(pModel, ncons, nobjs, nvars, nnums,
+                           objsense, ctype, vtype, code, lsize,
+                           varindex, numval, varval, objs_beg, objs_length,
+                           cons_beg, cons_length, lwrbnd, uprbnd)
 
-#retrieve the primal solution
-padPrimal = np.empty((nvars),dtype=np.double)
-errorcode = lindo.pyLSgetPrimalSolution(pModel,padPrimal)
-lindo.geterrormessage(pEnv,errorcode)
-print("Primal solution is: ")
-for x in padPrimal: print("%.5f" % x)
 
-#delete LINDO model pointer
-errorcode = lindo.pyLSdeleteModel(pModel)
-lindo.geterrormessage(pEnv,errorcode)
+    #solve the model
+    print("Solving the model...")
+    pnStatus = np.array([-1],dtype=np.int32)
+    lindo.pyLSsolveGOP(pModel, pnStatus)
+    print(f"Solution status: {pnStatus[0]}\n")
 
-#delete LINDO environment pointer
-errorcode = lindo.pyLSdeleteEnv(pEnv)
-lindo.geterrormessage(pEnv,errorcode)
 
+    #retrieve the objective value
+    dObj = np.array([-1.0],dtype=np.double)
+    lindo.pyLSgetInfo(pModel,lindo.LS_DINFO_POBJ,dObj)
+    print(f"Objective is: {dObj[0]:.5f}\n")
+
+    #retrieve the primal solution
+    padPrimal = np.empty((nvars),dtype=np.double)
+    lindo.pyLSgetPrimalSolution(pModel,padPrimal)
+    print("Primal solution is: ")
+    for x in padPrimal: print(f"{x:.5f}")
+
+    #delete LINDO model pointer
+    lindo.pyLSdeleteModel(pModel)
+
+
+    #delete LINDO environment pointer
+    lindo.pyLSdeleteEnv(pEnv)
+
+except lindo.LINDO_Exception as e:
+    lindo.geterrormessage(pEnv, e.args[1])
+except Exception as e:
+    print(f"Other Error => {e}")

@@ -14,72 +14,74 @@ import lindo
 import numpy as np
 import os
 
-#create LINDO environment and model objects
-LicenseKey = np.array('',dtype='S1024')
-lindo.pyLSloadLicenseString(os.getenv('LINDOAPI_HOME')+'/license/lndapi130.lic',LicenseKey)
-pnErrorCode = np.array([-1],dtype=np.int32)
-pEnv = lindo.pyLScreateEnv(pnErrorCode,LicenseKey)
-lindo.geterrormessage(pEnv,pnErrorCode[0])
+# The first try block is for catching errors rasied while creating an environment
+try:
+    #create LINDO environment and model objects
+    LicenseKey = np.array('',dtype='S1024')
+    lindo.pyLSloadLicenseString(os.getenv('LINDOAPI_HOME')+'/license/lndapi130.lic',LicenseKey)
+    pnErrorCode = np.array([-1],dtype=np.int32)
+    pEnv = lindo.pyLScreateEnv(pnErrorCode,LicenseKey)
+except lindo.LINDO_Exception as e:
+    print(e.args[0])
+    exit(1)
 
-print(lindo.getversion(pEnv))
+try:
+    print(lindo.getversion(pEnv))
 
-dataPath = os.getenv('LINDOAPI_HOME') + "/samples/data"
-# Tuner instances */
-errorcode = lindo.pyLSaddTunerInstance(pEnv, dataPath +"/bm23.mps.gz"); lindo.geterrormessage(pEnv,errorcode);
+    dataPath = os.getenv('LINDOAPI_HOME') + "/samples/data"
+    # Tuner instances */
+    lindo.pyLSaddTunerInstance(pEnv, dataPath +"/bm23.mps.gz")
 
-errorcode = lindo.pyLSaddTunerInstance(pEnv, dataPath +"/p0033.mps.gz"); lindo.geterrormessage(pEnv,errorcode);
+    lindo.pyLSaddTunerInstance(pEnv, dataPath +"/p0033.mps.gz")
 
-errorcode = lindo.pyLSaddTunerInstance(pEnv, dataPath +"/p0201.mps.gz"); lindo.geterrormessage(pEnv,errorcode);
+    lindo.pyLSaddTunerInstance(pEnv, dataPath +"/p0201.mps.gz")
 
-errorcode = lindo.pyLSaddTunerInstance(pEnv, dataPath +"/p0282.mps.gz"); lindo.geterrormessage(pEnv,errorcode);
+    lindo.pyLSaddTunerInstance(pEnv, dataPath +"/p0282.mps.gz")
 
-# Tuner options */
-errorcode = lindo.pyLSaddTunerOption(pEnv,"max_parsets",6); lindo.geterrormessage(pEnv,errorcode);
-errorcode = lindo.pyLSaddTunerOption(pEnv,"use_gop",0); lindo.geterrormessage(pEnv,errorcode);
-errorcode = lindo.pyLSaddTunerOption(pEnv,"time_limit",10); lindo.geterrormessage(pEnv,errorcode);
-errorcode = lindo.pyLSaddTunerOption(pEnv,"ntrials",2); lindo.geterrormessage(pEnv,errorcode);
-errorcode = lindo.pyLSaddTunerOption(pEnv,"nthreads",1); lindo.geterrormessage(pEnv,errorcode);
-errorcode = lindo.pyLSaddTunerOption(pEnv,"seed",1032); lindo.geterrormessage(pEnv,errorcode);
-errorcode = lindo.pyLSaddTunerOption(pEnv,"criterion",1); lindo.geterrormessage(pEnv,errorcode);
+    # Tuner options */
+    lindo.pyLSaddTunerOption(pEnv,"max_parsets",6)
+    lindo.pyLSaddTunerOption(pEnv,"use_gop",0)
+    lindo.pyLSaddTunerOption(pEnv,"time_limit",10)
+    lindo.pyLSaddTunerOption(pEnv,"ntrials",2)
+    lindo.pyLSaddTunerOption(pEnv,"nthreads",1)
+    lindo.pyLSaddTunerOption(pEnv,"seed",1032)
+    lindo.pyLSaddTunerOption(pEnv,"criterion",1)
 
-# Tuner dynamic parameters */
-errorcode = lindo.pyLSaddTunerZDynamic(pEnv,lindo.LS_IPARAM_LP_SCALE); lindo.geterrormessage(pEnv,errorcode);
-errorcode = lindo.pyLSaddTunerZDynamic(pEnv,lindo.LS_IPARAM_MIP_PRELEVEL); lindo.geterrormessage(pEnv,errorcode);
-errorcode = lindo.pyLSaddTunerZDynamic(pEnv,lindo.LS_IPARAM_MIP_BRANCHDIR); lindo.geterrormessage(pEnv,errorcode);
-errorcode = lindo.pyLSaddTunerZDynamic(pEnv,lindo.LS_IPARAM_MIP_BRANCHRULE); lindo.geterrormessage(pEnv,errorcode);
-errorcode = lindo.pyLSaddTunerZDynamic(pEnv,lindo.LS_IPARAM_MIP_FP_MODE); lindo.geterrormessage(pEnv,errorcode);
-errorcode = lindo.pyLSaddTunerZDynamic(pEnv,lindo.LS_DPARAM_SOLVER_FEASTOL); lindo.geterrormessage(pEnv,errorcode);
+    # Tuner dynamic parameters */
+    lindo.pyLSaddTunerZDynamic(pEnv,lindo.LS_IPARAM_LP_SCALE)
+    lindo.pyLSaddTunerZDynamic(pEnv,lindo.LS_IPARAM_MIP_PRELEVEL)
+    lindo.pyLSaddTunerZDynamic(pEnv,lindo.LS_IPARAM_MIP_BRANCHDIR)
+    lindo.pyLSaddTunerZDynamic(pEnv,lindo.LS_IPARAM_MIP_BRANCHRULE)
+    lindo.pyLSaddTunerZDynamic(pEnv,lindo.LS_IPARAM_MIP_FP_MODE)
+    lindo.pyLSaddTunerZDynamic(pEnv,lindo.LS_DPARAM_SOLVER_FEASTOL)
 
-# Tuner static groups and parameters */
-errorcode = lindo.pyLSaddTunerZStatic(pEnv,1,lindo.LS_IPARAM_MIP_NODESELRULE,4); lindo.geterrormessage(pEnv,errorcode);
-errorcode = lindo.pyLSaddTunerZStatic(pEnv,1,lindo.LS_DPARAM_MIP_RELINTTOL,0.0001); lindo.geterrormessage(pEnv,errorcode);
-errorcode = lindo.pyLSaddTunerZStatic(pEnv,1,lindo.LS_DPARAM_SOLVER_OPTTOL,1e-006); lindo.geterrormessage(pEnv,errorcode);
-errorcode = lindo.pyLSaddTunerZStatic(pEnv,2,lindo.LS_IPARAM_MIP_NODESELRULE,1); lindo.geterrormessage(pEnv,errorcode);
-errorcode = lindo.pyLSaddTunerZStatic(pEnv,2,lindo.LS_DPARAM_MIP_RELINTTOL,0.001); lindo.geterrormessage(pEnv,errorcode);
-errorcode = lindo.pyLSaddTunerZStatic(pEnv,2,lindo.LS_DPARAM_SOLVER_OPTTOL,1e-005); lindo.geterrormessage(pEnv,errorcode);
-errorcode = lindo.pyLSaddTunerZStatic(pEnv,3,lindo.LS_IPARAM_MIP_NODESELRULE,3); lindo.geterrormessage(pEnv,errorcode);
-errorcode = lindo.pyLSaddTunerZStatic(pEnv,3,lindo.LS_DPARAM_MIP_RELINTTOL,1e-005); lindo.geterrormessage(pEnv,errorcode);
-errorcode = lindo.pyLSaddTunerZStatic(pEnv,3,lindo.LS_DPARAM_SOLVER_OPTTOL,0.0001); lindo.geterrormessage(pEnv,errorcode);
+    # Tuner static groups and parameters */
+    lindo.pyLSaddTunerZStatic(pEnv,1,lindo.LS_IPARAM_MIP_NODESELRULE,4)
+    lindo.pyLSaddTunerZStatic(pEnv,1,lindo.LS_DPARAM_MIP_RELINTTOL,0.0001)
+    lindo.pyLSaddTunerZStatic(pEnv,1,lindo.LS_DPARAM_SOLVER_OPTTOL,1e-006)
+    lindo.pyLSaddTunerZStatic(pEnv,2,lindo.LS_IPARAM_MIP_NODESELRULE,1)
+    lindo.pyLSaddTunerZStatic(pEnv,2,lindo.LS_DPARAM_MIP_RELINTTOL,0.001)
+    lindo.pyLSaddTunerZStatic(pEnv,2,lindo.LS_DPARAM_SOLVER_OPTTOL,1e-005)
+    lindo.pyLSaddTunerZStatic(pEnv,3,lindo.LS_IPARAM_MIP_NODESELRULE,3)
+    lindo.pyLSaddTunerZStatic(pEnv,3,lindo.LS_DPARAM_MIP_RELINTTOL,1e-005)
+    lindo.pyLSaddTunerZStatic(pEnv,3,lindo.LS_DPARAM_SOLVER_OPTTOL,0.0001)
 
+    lindo.pyLSprintTuner(pEnv)
+    lindo.pyLSrunTuner(pEnv)
 
-if 0>1:
-    errorcode = lindo.pyLSprintTuner(pEnv);
-    lindo.geterrormessage(pEnv,errorcode);
+    lindo.pyLSdisplayTunerResults(pEnv)
 
-errorcode = lindo.pyLSrunTuner(pEnv);
-lindo.geterrormessage(pEnv,errorcode);
+    mCriterion = -1; #selected criterion
+    jInstance  = -1; #avg instance
+    lindo.pyLSwriteTunerParameters(pEnv,"lindo_tuned.par",jInstance,mCriterion)
 
-errorcode = lindo.pyLSdisplayTunerResults(pEnv);
-lindo.geterrormessage(pEnv,errorcode);
+    lindo.pyLSclearTuner(pEnv)
 
-mCriterion = -1; #selected criterion
-jInstance  = -1; #avg instance
-errorcode = lindo.pyLSwriteTunerParameters(pEnv,"lindo_tuned.par",jInstance,mCriterion);
-lindo.geterrormessage(pEnv,errorcode);
+    #delete LINDO environment pointer
+    lindo.pyLSdeleteEnv(pEnv)
 
-errorcode = lindo.pyLSclearTuner(pEnv);
-
-#delete LINDO environment pointer
-errorcode = lindo.pyLSdeleteEnv(pEnv)
-lindo.geterrormessage(pEnv,errorcode)
+except lindo.LINDO_Exception as e:
+    lindo.geterrormessage(pEnv, e.args[1])
+except Exception as e:
+    print(f"Other Error => {e}")
 
