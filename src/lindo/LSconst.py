@@ -499,7 +499,8 @@ LS_IPARAM_MIP_KBEST_USE_GOP                                  = 5417
 LS_IPARAM_MIP_SYMMETRY_MODE                                  = 5418
 LS_IPARAM_MIP_ALLDIFF_METHOD                                 = 5419
 LS_IPARAM_MIP_SOLLIM                                         = 5420
-
+LS_IPARAM_MIP_FP_PROJECTION                                  = 5421
+LS_IPARAM_MIP_SYMMETRY_NONZ                                  = 5422
 # Global optimization (GOP) parameters (6000 - 6+++) #/
 LS_DPARAM_GOP_RELOPTTOL                                      = 6400
 LS_DPARAM_GOP_FLTTOL                                         = 6401
@@ -1006,7 +1007,8 @@ EP_XPOWDIVAB                                                 = 1185
 EP_LOGABEXPX                                                 = 1186
 EP_LOGSUMEXP                                                 = 1187
 EP_LOGSUMAEXP                                                = 1188
-
+EP_EXPMODIV                                                  = 1189
+EP_POWERUTILITY                                              = 1190
 
 # Model and solution information codes ( 110xx-140xx) #/
 # Model statistics (11001-11199)#/

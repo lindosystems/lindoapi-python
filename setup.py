@@ -10,7 +10,7 @@ import os
 import sys
 import platform
 
-VERSION = "13.0.2"
+VERSION = "14.0.0"
 
 class BuildData():
     """
@@ -21,7 +21,7 @@ class BuildData():
 
     """
     def __init__(self):
-        self.MAJOR = "13"
+        self.MAJOR = "14"
         self.MINOR = "0"
         self.API_HOME = os.environ.get('LINDOAPI_HOME')
         self.IncludePath = os.path.join(self.API_HOME , "include")

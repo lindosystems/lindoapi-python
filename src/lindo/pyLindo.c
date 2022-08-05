@@ -4,7 +4,6 @@
 
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #define LSASSERT(a) {if ((errorcode = (a)) != 0) goto ErrorReturn;}
-
 #define DCL_BUF(Nx) \
     int errorcode = 0;\
     int    m, n;\
@@ -161,6 +160,8 @@ PyObject *pyLSloadNLPData(PyObject *self, PyObject *args);
 PyObject *pyLSloadInstruct(PyObject *self, PyObject *args);
 PyObject *pyLSaddInstruct(PyObject *self, PyObject *args);
 PyObject *pyLSgetDualModel(PyObject *self, PyObject *args);
+PyObject *pyLSloadIndData(PyObject *self, PyObject *args);
+PyObject *pyLSdeleteIndConstraints(PyObject *self, PyObject *args);
 
 /**********************************************************************
  * Solver Initialization Routines (9)                                 *
@@ -267,6 +268,7 @@ PyObject *pyLSmodifyVariableType(PyObject *self, PyObject *args);
 PyObject *pyLSaddNLPAj(PyObject *self, PyObject *args);
 PyObject *pyLSaddNLPobj(PyObject *self, PyObject *args);
 PyObject *pyLSdeleteNLPobj(PyObject *self, PyObject *args);
+
 
 /*********************************************************************
  *   Model & Solution Analysis Routines (8)                         *
@@ -894,6 +896,10 @@ static PyMethodDef lindo_methods[] =
     { "pyLSsetFuncalc", pyLSsetFuncalc, METH_VARARGS },
     { "pyLSsetGradcalc", pyLSsetGradcalc, METH_VARARGS },
     { "pyLSwriteTunerParameters", pyLSwriteTunerParameters, METH_VARARGS },
+    { "pyLSloadIndData", pyLSloadIndData, METH_VARARGS },
+    { "pyLSdeleteIndConstraints", pyLSdeleteIndConstraints, METH_VARARGS },
+
+
 #ifdef _DEBUG
 #include "pyLindo_defn.h"
 #endif
@@ -16165,3 +16171,104 @@ PyObject *pyLSgetObjPoolParam(PyObject *self, PyObject *args) {
   return Py_BuildValue(osig, errorcode);
 
 }
+
+
+/*
+ * @brief This routine loads the given indicator data into the LSmodel data
+ * structure.
+ *
+ * @param pModel An instance of LSmodel in which to place the problem data.
+ * @param nIndicRows         The number of indicator rows to load.
+ * @param paiIndicRows   A vector containing the indices of indicator rows.
+ * @param paiIndicCols    A vector containing the indices of indicator vars.
+ * @param paiIndicVals    A vector containing the values of indicator vars.
+ * @return Error code.
+ *
+ */
+PyObject *pyLSloadIndData(PyObject *self, PyObject *args){
+    int       errorcode = LSERR_NO_ERROR;
+    pLSmodel  pModel;
+    int       nIndicRows;
+    int       *paiIndicRows = NULL,*paiIndicCols = NULL ,*paiIndicVals = NULL;
+
+    PyObject       *pyModel;
+    PyArrayObject  *pyIndicRows,*pyIndicCols,*pyIndicVals;
+
+
+    if (!PyArg_ParseTuple(args, "OiO!O!O!",
+                                 &pyModel,
+                                 &nIndicRows,
+                                 &PyArray_Type,&pyIndicRows,
+                                 &PyArray_Type,&pyIndicCols,
+                                 &PyArray_Type,&pyIndicVals
+                           ))
+
+    {
+        return NULL;
+    }
+
+    CHECK_MODEL;
+
+    if(pyIndicRows && pyIndicRows->dimensions > 0)
+        paiIndicRows = (int *)pyIndicRows->data;
+    if(pyIndicCols && pyIndicCols->dimensions > 0)
+        paiIndicCols = (int *)pyIndicCols->data;
+    if(pyIndicVals && pyIndicVals->dimensions > 0)
+        paiIndicVals = (int *)pyIndicVals->data;
+
+    errorcode = LSloadIndData(pModel,
+                              nIndicRows,
+                              paiIndicRows,
+                              paiIndicCols,
+                              paiIndicVals);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
+    return Py_BuildValue("i",errorcode);
+
+}
+
+
+ /*
+  * @brief Delete a set of indicator constraints
+  * @param[in,out] pModel  An instance of LSmodel
+  * @param[in,out] nCons Number of indicator constraints to delete
+  * @param[in,out] paiCons Vector of indicator constraints to delete
+  * @return Error code.
+  * @remark None
+  */
+PyObject *pyLSdeleteIndConstraints(PyObject *self, PyObject *args){
+    int       errorcode = LSERR_NO_ERROR;
+    pLSmodel  pModel;
+    int       nCons;
+    int       *paiCons = NULL;
+
+    PyObject       *pyModel;
+    PyArrayObject  *pyCons = NULL;
+
+    if (!PyArg_ParseTuple(args, "OiO!",
+                                 &pyModel,
+                                 &nCons,
+                                 &PyArray_Type,&pyCons))
+
+    {
+        return NULL;
+    }
+
+    CHECK_MODEL;
+
+    if(pyCons && pyCons->dimensions > 0) paiCons = (int *)pyCons->data;
+
+    errorcode = LSdeleteIndConstraints(pModel,
+                                    nCons,
+                                    paiCons);
+
+    if (errorcode != 0){
+        ERROR_SET(errorcode);
+    }
+
+    return Py_BuildValue("i",errorcode);
+}
+
