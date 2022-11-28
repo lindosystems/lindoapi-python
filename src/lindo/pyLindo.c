@@ -405,6 +405,7 @@ PyObject *pyLSwriteVarPriorities(PyObject *self, PyObject *args);
 PyObject *pyLSwriteNLSolution(PyObject *self, PyObject *args);
 PyObject *pyLSaddTunerInstance(PyObject *self, PyObject *args);
 PyObject *pyLSaddTunerOption(PyObject *self, PyObject *args);
+PyObject *pyLSaddTunerStrOption(PyObject *self, PyObject *args);
 PyObject *pyLSaddTunerZDynamic(PyObject *self, PyObject *args);
 PyObject *pyLSaddTunerZStatic(PyObject *self, PyObject *args);
 PyObject *pyLSclearTuner(PyObject *self, PyObject *args);
@@ -783,6 +784,7 @@ static PyMethodDef lindo_methods[] =
     { "pyLSwriteNLSolution", pyLSwriteNLSolution, METH_VARARGS },
     { "pyLSaddTunerInstance", pyLSaddTunerInstance, METH_VARARGS },
     { "pyLSaddTunerOption", pyLSaddTunerOption, METH_VARARGS },
+    { "pyLSaddTunerStrOption", pyLSaddTunerStrOption, METH_VARARGS },
     { "pyLSaddTunerZDynamic", pyLSaddTunerZDynamic, METH_VARARGS },
     { "pyLSaddTunerZStatic", pyLSaddTunerZStatic, METH_VARARGS },
     { "pyLSclearTuner", pyLSclearTuner, METH_VARARGS },
@@ -11102,6 +11104,42 @@ PyObject *pyLSaddTunerOption(PyObject *self, PyObject *args) {
     errorcode = LSaddTunerOption(pEnv
         , sbuf[2] //*szKey
         , dbuf[3]); //dValue
+
+    //ErrorReturn:
+    return Py_BuildValue(osig, errorcode);
+
+}
+
+/*
+* @brief LSaddTunerStrOption
+* @param[in,out] self Pointer to self
+* @param[in,out] args Pointer to args
+* @return int
+* @remark errorcode = lindo.LSaddTunerStrOption(pEnv,szKey,szValue)
+*/
+PyObject *pyLSaddTunerStrOption(PyObject *self, PyObject *args) {
+    DCL_BUF(20);
+    pLSenv     pEnv = NULL;
+    PyObject *pyEnv = NULL;
+    npy_intp  index[1] = { 0 };
+    char osig[255] = "i";
+
+    // zero-out temp vectors
+    ZERO_BUF(20);
+
+    if (!PyArg_ParseTuple(args, "Oss",
+        &pyEnv, //pEnv
+        &sbuf[2],  //*szKey
+        &sbuf[3])) { //szValue
+        return NULL;
+    }
+
+    CHECK_ENV;
+
+    // Get C pointers
+    errorcode = LSaddTunerStrOption(pEnv
+        , sbuf[2] //*szKey
+        , sbuf[3]); //dValue
 
     //ErrorReturn:
     return Py_BuildValue(osig, errorcode);
