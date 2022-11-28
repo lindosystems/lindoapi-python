@@ -134,3 +134,4 @@ tmp/
 pyLindo/pyLindo_*
 *.old
 *.py~
+*.bak
