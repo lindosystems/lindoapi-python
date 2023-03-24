@@ -5433,6 +5433,7 @@ PyObject *pyLSgetRoundMIPsolution(PyObject *self, PyObject *args)
     double    *padObjRound = NULL,*padPfeasRound = NULL;
     int       *pnstatus = NULL;
     int       iUseOpti;
+    int       callerFunc;
     npy_intp  index[1] = {0};
 
     PyObject       *pyModel;
@@ -5440,14 +5441,15 @@ PyObject *pyLSgetRoundMIPsolution(PyObject *self, PyObject *args)
     PyArrayObject  *pyObjRound = NULL, *pyPfeasRound = NULL;
     PyArrayObject  *pystatus = NULL;
 
-    if (!PyArg_ParseTuple(args, "OO!O!O!O!O!i",
+    if (!PyArg_ParseTuple(args, "OO!O!O!O!O!ii",
                                  &pyModel,
                                  &PyArray_Type,&pyPrimal,
                                  &PyArray_Type,&pyPrimalRound,
                                  &PyArray_Type,&pyObjRound,
                                  &PyArray_Type,&pyPfeasRound,
                                  &PyArray_Type,&pystatus,
-                                 &iUseOpti))
+                                 &iUseOpti,
+                                 &callerFunc))
 
     {
         return NULL;
@@ -5472,7 +5474,8 @@ PyObject *pyLSgetRoundMIPsolution(PyObject *self, PyObject *args)
                                       padObjRound,
                                       padPfeasRound,
                                       pnstatus,
-                                      iUseOpti);
+                                      iUseOpti,
+                                      callerFunc);
 
     if (errorcode != 0){
         ERROR_SET(errorcode);
