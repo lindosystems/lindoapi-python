@@ -77,16 +77,16 @@ elif bd.platform == 'Linux':
 
 # For Mac OS X
 elif bd.platform == 'Darwin':
-    if bd.is_64bits:
+    if platform.machine() == 'x86_64':
         LindoLib = 'lindo64'
         LibPath = os.path.join(bd.API_HOME, 'lib/osx64x86')
         BinPath = os.path.join(bd.API_HOME, 'bin/osx64x86')
         lib = os.path.join('bin/osx64x86', LindoLib + ".dylib")
     else:
-        LindoLib = 'lindo'
-        LibPath = os.path.join(bd.API_HOME, 'lib/osx32x86')
-        BinPath = os.path.join(bd.API_HOME, 'bin/osx32x86')
-        lib = os.path.join('bin/osx32x86', LindoLib + ".dylib")
+        LindoLib = 'lindo64'
+        LibPath = os.path.join(bd.API_HOME, 'lib/osx64arm')
+        BinPath = os.path.join(bd.API_HOME, 'bin/osx64arm')
+        lib = os.path.join('bin/osx64arm', LindoLib + ".dylib")
     extra_link_args = '-Wl,-rpath,' + BinPath
     macros = [('_LINDO_DLL_', '')]
 else:

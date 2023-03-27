@@ -35,10 +35,10 @@ def setSymLink(src, dest):
 # not already included.
 #
 def mac(bd:BuildData):
-    if bd.is_64bits:
+    if platform.machine() == 'x86_64':
         binPath= os.path.join(bd.API_HOME,"bin/osx64x86")
     else:
-        binPath= os.path.join(bd.API_HOME,"bin/osx32x86")
+        binPath= os.path.join(bd.API_HOME,"bin/osx64arm")
 
     dylibList = glob.glob(os.path.join(binPath, "*.dylib"))
     for dylibPath in dylibList:
