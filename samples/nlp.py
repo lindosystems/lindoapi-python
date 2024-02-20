@@ -153,7 +153,7 @@ Nnlobj = 2
 try:
     #create LINDO environment
     LicenseKey = np.array('',dtype='S1024')
-    lindo.pyLSloadLicenseString(os.getenv('LINDOAPI_HOME')+'/license/lndapi140.lic',LicenseKey)
+    lindo.pyLSloadLicenseString(os.getenv('LINDOAPI_HOME')+'/license/lndapi150.lic',LicenseKey)
     pnErrorCode = np.array([-1],dtype=np.int32)
     pEnv = lindo.pyLScreateEnv(pnErrorCode,LicenseKey)
 except lindo.LINDO_Exception as e:
