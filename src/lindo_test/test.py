@@ -8,7 +8,7 @@ def test_pyLindo_version():
     import lindo
     import numpy as np
     import os
-    LS_IPARAM_VER_MAJOR = 14
+    LS_IPARAM_VER_MAJOR = 15
     LS_IPARAM_VER_MINOR = 0
 
     pnErrorCode = np.array([-1],dtype=np.int32)
