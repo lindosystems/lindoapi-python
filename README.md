@@ -73,6 +73,8 @@ $ export LINDOAPI_HOME="~/opt/lindoapi"
 ```   
 To have this variable set automatically, add the above line to your `~/.bashrc` or `~/.bash_profile` file.
 
+## For Mac Users 
+The LINDO api has two version that could be compatible with your machine osx64x86 and arm64. If you are using osx64x86 then your Python distribution must have been installed on an Intel Mac or using Rosetta, otherwise it will target arm64 .whl files when using pip. Similarly, if you are using a M1/M2 Mac when Python was installed on your machine Rosetta should have been disabled. The LINDO api supports Python 3.7-3.10 on osx64x86 and Python 3.10 on arm64. 
 
 ## How to Build Wheel and Install (for package managers)
 
