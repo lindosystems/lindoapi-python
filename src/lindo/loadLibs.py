@@ -69,13 +69,15 @@ def checkVersion(bd:BuildData):
             minorLine = f.readline()
             f.close()
     except FileNotFoundError:
-        raise Exception(f"Could not locate {fn}\n Create file and add \nLS_MAJOR={bd.MAJOR}\nLS_MINOR={bd.MINOR}")
+        No_lsversion_FileFound = f"Could not locate {fn}\n Create file and add \nLS_MAJOR={bd.MAJOR}\nLS_MINOR={bd.MINOR}"
+        raise Exception(No_lsversion_FileFound)
     # LS_MAJOR=15 the number starts at 9
     endOfDef = 9 
     majorNum = majorLine[endOfDef:]
     minorNum = majorLine[endOfDef:]
     if(int(bd.MAJOR) != int(majorNum)):
-        raise Exception(f"Lindo API Version does not match Lindo/Python version\n Try pip install lindo=={majorNum}")
+        WrongLindoPyVersion = f"Lindo API Version does not match Lindo/Python version\n Try pip install lindo=={majorNum}"
+        raise Exception(WrongLindoPyVersion)
         
 def main():
     bd = BuildData()
