@@ -9,7 +9,7 @@ from distutils.sysconfig import get_python_lib
 import os
 import sys
 import platform
-
+import numpy
 VERSION = "15.0.0"
 
 class BuildData():

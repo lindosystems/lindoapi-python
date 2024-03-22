@@ -136,3 +136,7 @@ pyLindo/pyLindo_*
 *.old
 *.py~
 *.bak
+testLinux
+Lindo_Linux_Test
+get-pip.py
+outputfile

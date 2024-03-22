@@ -59,8 +59,27 @@ def windows(bd:BuildData):
         os.add_dll_directory(LibPath)
 
 
+def checkVersion(bd:BuildData):
+    # try to read in fn display informative error
+    # if file can not be located
+    fn = bd.API_HOME + 'include/lsversion.sh'
+    try:
+        with open(fn, "r") as f:
+            majorLine = f.readline()
+            minorLine = f.readline()
+            f.close()
+    except FileNotFoundError:
+        raise Exception(f"Could not locate {fn}\n Create file and add \nLS_MAJOR={bd.MAJOR}\nLS_MINOR={bd.MINOR}")
+    # LS_MAJOR=15 the number starts at 9
+    endOfDef = 9 
+    majorNum = majorLine[endOfDef:]
+    minorNum = majorLine[endOfDef:]
+    if(int(bd.MAJOR) != int(majorNum)):
+        raise Exception(f"Lindo API Version does not match Lindo/Python version\n Try pip install lindo=={majorNum}")
+        
 def main():
     bd = BuildData()
+    checkVersion(bd)
     #Environment variable LINDOAPI_HOME must be set
     if bd.API_HOME == None:
         print("Environment variable LINDOAPI_HOME should be set!")
