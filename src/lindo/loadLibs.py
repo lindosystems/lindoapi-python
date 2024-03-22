@@ -62,7 +62,7 @@ def windows(bd:BuildData):
 def checkVersion(bd:BuildData):
     # try to read in fn display informative error
     # if file can not be located
-    fn = bd.API_HOME + 'include/lsversion.sh'
+    fn = os.path.join(bd.API_HOME ,'include', 'lsversion.sh')
     try:
         with open(fn, "r") as f:
             majorLine = f.readline()
