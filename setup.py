@@ -54,11 +54,13 @@ with open(readmeFn, encoding="utf-8") as f:
 
 # For Windows
 if bd.platform == 'Windows':
-    LindoLib = 'lindo64_' + bd.MAJOR + '_' + bd.MINOR
+
     if bd.is_64bits:
+        LindoLib = 'lindo64_' + bd.MAJOR + '_' + bd.MINOR
         LibPath = os.path.join(bd.API_HOME, 'lib/win64')
         BinPath = os.path.join(bd.API_HOME, 'lib/win64')
     else:
+        LindoLib = 'lindo' + bd.MAJOR + '_' + bd.MINOR
         LibPath = os.path.join(bd.API_HOME, 'lib/win32')
         BinPath = os.path.join(bd.API_HOME, 'bin/win32')
     extra_link_args = '-Wl,--enable-stdcall-fixup'
