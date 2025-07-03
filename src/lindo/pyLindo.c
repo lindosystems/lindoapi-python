@@ -1,8 +1,8 @@
+#define NPY_NO_DEPRECATED_API NPY_1_20_API_VERSION 
 #include "Python.h"
-#include "arrayobject.h"
+#include <numpy/arrayobject.h>
 #include "lindo.h"
 
-#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #define LSASSERT(a) {if ((errorcode = (a)) != 0) goto ErrorReturn;}
 #define DCL_BUF(Nx) \
     int errorcode = 0;\
@@ -46,18 +46,18 @@
 }
 
 #define I_VECDATA(k) {\
-    if (pyArr[k] && pyArr[2]->dimensions > 0)\
-        ivecptr[k] = (int*)pyArr[k]->data;\
+    if (pyArr[k] && PyArray_DIMS(pyArr[2]) > 0)\
+        ivecptr[k] = (int*)PyArray_DATA(pyArr[k]);\
 }
 
 #define D_VECDATA(k) {\
-    if (pyArr[k] && pyArr[2]->dimensions > 0)\
-        dvecptr[k] = (double*)pyArr[k]->data;\
+    if (pyArr[k] && PyArray_DIMS(pyArr[2]) > 0)\
+        dvecptr[k] = (double*)PyArray_DATA(pyArr[k]);\
 }
 
 #define S_VECDATA(k) {\
-    if (pyArr[k] && pyArr[2]->dimensions > 0)\
-        svecptr[k] = (char*)pyArr[k]->data;\
+    if (pyArr[k] && PyArray_DIMS(pyArr[2]) > 0)\
+        svecptr[k] = (char*)PyArray_DATA(pyArr[k]);\
 }
 
 struct module_state {
@@ -1104,11 +1104,11 @@ PyObject *pyLScreateEnv(PyObject *self, PyObject *args)
         return NULL;
     }
 
-    if(pyErrorCode && pyErrorCode->dimensions > 0)
+    if(pyErrorCode && PyArray_DIMS(pyErrorCode) > 0)
         pnErrorCode = (int *)PyArray_GetPtr(pyErrorCode,index);
 
     if(pyLicenseKey)
-        pachLicenseKey = (char *)pyLicenseKey->data;
+        pachLicenseKey = (char *)PyArray_DATA(pyLicenseKey);
 
     pEnv = LScreateEnv(pnErrorCode,pachLicenseKey);
 
@@ -1138,7 +1138,7 @@ PyObject *pyLScreateModel(PyObject *self, PyObject *args)
         return NULL;
     }
 
-    if(pyErrorCode && pyErrorCode->dimensions > 0)
+    if(pyErrorCode && PyArray_DIMS(pyErrorCode) > 0)
         pnErrorCode = (int *)PyArray_GetPtr(pyErrorCode,index);
 
     pEnv = PyGetObjPtr(pyEnv);
@@ -1846,7 +1846,7 @@ PyObject *pyLSgetFileError(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyLinenum && pyLinenum->dimensions > 0)
+    if(pyLinenum && PyArray_DIMS(pyLinenum) > 0)
         pnLinenum = (int *)PyArray_GetPtr(pyLinenum,index);
     if(pyLinetxt)
         pachLinetxt = (char *)PyArray_GetPtr(pyLinetxt,index);
@@ -1879,7 +1879,7 @@ PyObject *pyLSgetErrorRowIndex(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyRow && pyRow->dimensions > 0)
+    if(pyRow && PyArray_DIMS(pyRow) > 0)
         piRow = (int *)PyArray_GetPtr(pyRow,index);
 
     errorcode = LSgetErrorRowIndex(pModel,piRow);
@@ -1915,7 +1915,7 @@ PyObject *pyLSsetModelParameter(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyValue && pyValue->dimensions > 0)
+    if(pyValue && PyArray_DIMS(pyValue) > 0)
         pvValue = (void *)PyArray_GetPtr(pyValue,index);
 
     errorcode = LSsetModelParameter(pModel,nParameter,pvValue);
@@ -1948,7 +1948,7 @@ PyObject *pyLSgetModelParameter(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyValue && pyValue->dimensions > 0)
+    if(pyValue && PyArray_DIMS(pyValue) > 0)
         pvValue = (void *)PyArray_GetPtr(pyValue,index);
 
     errorcode = LSgetModelParameter(pModel,nParameter,pvValue);
@@ -1981,7 +1981,7 @@ PyObject *pyLSsetEnvParameter(PyObject *self, PyObject *args)
 
     CHECK_ENV;
 
-    if(pyValue && pyValue->dimensions > 0)
+    if(pyValue && PyArray_DIMS(pyValue) > 0)
         pvValue = (void *)PyArray_GetPtr(pyValue,index);
 
     errorcode = LSsetEnvParameter(pEnv,nParameter,pvValue);
@@ -2014,7 +2014,7 @@ PyObject *pyLSgetEnvParameter(PyObject *self, PyObject *args)
 
     CHECK_ENV;
 
-    if(pyValue && pyValue->dimensions > 0)
+    if(pyValue && PyArray_DIMS(pyValue) > 0)
         pvValue = (void *)PyArray_GetPtr(pyValue,index);
 
     errorcode = LSgetEnvParameter(pEnv,nParameter,pvValue);
@@ -2075,7 +2075,7 @@ PyObject *pyLSgetModelDouParameter(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyValue && pyValue->dimensions > 0)
+    if(pyValue && PyArray_DIMS(pyValue) > 0)
         pdValue = (double *)PyArray_GetPtr(pyValue,index);
 
     errorcode = LSgetModelDouParameter(pModel,nParameter,pdValue);
@@ -2136,7 +2136,7 @@ PyObject *pyLSgetModelIntParameter(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyValue && pyValue->dimensions > 0)
+    if(pyValue && PyArray_DIMS(pyValue) > 0)
         pnValue = (int *)PyArray_GetPtr(pyValue,index);
 
     errorcode = LSgetModelIntParameter(pModel,nParameter,pnValue);
@@ -2197,7 +2197,7 @@ PyObject *pyLSgetEnvDouParameter(PyObject *self, PyObject *args)
 
     CHECK_ENV;
 
-    if(pyValue && pyValue->dimensions > 0)
+    if(pyValue && PyArray_DIMS(pyValue) > 0)
         pdValue = (double *)PyArray_GetPtr(pyValue,index);
 
     errorcode = LSgetEnvDouParameter(pEnv,nParameter,pdValue);
@@ -2258,7 +2258,7 @@ PyObject *pyLSgetEnvIntParameter(PyObject *self, PyObject *args)
 
     CHECK_ENV;
 
-    if(pyValue && pyValue->dimensions > 0)
+    if(pyValue && PyArray_DIMS(pyValue) > 0)
         pnValue = (int *)PyArray_GetPtr(pyValue,index);
 
     errorcode = LSgetEnvIntParameter(pEnv,nParameter,pnValue);
@@ -2372,9 +2372,9 @@ PyObject *pyLSgetIntParameterRange(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyValMIN && pyValMIN->dimensions > 0)
+    if(pyValMIN && PyArray_DIMS(pyValMIN) > 0)
         pnValMIN = (int *)PyArray_GetPtr(pyValMIN,index);
-    if(pyValMAX && pyValMAX->dimensions > 0)
+    if(pyValMAX && PyArray_DIMS(pyValMAX) > 0)
         pnValMAX = (int *)PyArray_GetPtr(pyValMAX,index);
 
     errorcode = LSgetIntParameterRange(pModel,nParameter,pnValMIN,pnValMAX);
@@ -2410,9 +2410,9 @@ PyObject *pyLSgetDouParameterRange(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyValMIN && pyValMIN->dimensions > 0)
+    if(pyValMIN && PyArray_DIMS(pyValMIN) > 0)
         pdValMIN = (double *)PyArray_GetPtr(pyValMIN,index);
-    if(pyValMAX && pyValMAX->dimensions > 0)
+    if(pyValMAX && PyArray_DIMS(pyValMAX) > 0)
         pdValMAX = (double *)PyArray_GetPtr(pyValMAX,index);
 
     errorcode = LSgetDouParameterRange(pModel,nParameter,pdValMIN,pdValMAX);
@@ -2547,9 +2547,9 @@ PyObject *pyLSgetParamMacroID(PyObject *self, PyObject *args)
 
     CHECK_ENV;
 
-    if(pyParamType && pyParamType->dimensions > 0)
+    if(pyParamType && PyArray_DIMS(pyParamType) > 0)
         pnParamType = (int *)PyArray_GetPtr(pyParamType,index);
-    if(pyParam && pyParam->dimensions > 0)
+    if(pyParam && PyArray_DIMS(pyParam) > 0)
         pnParam = (int *)PyArray_GetPtr(pyParam,index);
 
     errorcode = LSgetParamMacroID(pEnv,szParam,pnParamType,pnParam);
@@ -2606,24 +2606,24 @@ PyObject *pyLSloadLPData(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyC && pyC->dimensions > 0)
-        padC = (double *)pyC->data;
-    if(pyB && pyB->dimensions > 0)
-        padB = (double *)pyB->data;
-    if(pyConTypes && pyConTypes->dimensions > 0)
-        pszConTypes = (char *)pyConTypes->data;
-    if(pyiAcols && pyiAcols->dimensions > 0)
-        paiAcols = (int *)pyiAcols->data;
-    if(pynAcols && pynAcols->dimensions > 0)
-        panAcols = (int *)pynAcols->data;
-    if(pyAcoef && pyAcoef->dimensions > 0)
-        padAcoef = (double *)pyAcoef->data;
-    if(pyArows && pyArows->dimensions > 0)
-        paiArows = (int *)pyArows->data;
-    if(pyL && pyL->dimensions > 0)
-        padL = (double *)pyL->data;
-    if(pyU && pyU->dimensions > 0)
-        padU = (double *)pyU->data;
+    if(pyC && PyArray_DIMS(pyC) > 0)
+        padC = (double *)PyArray_DATA(pyC);
+    if(pyB && PyArray_DIMS(pyB) > 0)
+        padB = (double *)PyArray_DATA(pyB);
+    if(pyConTypes && PyArray_DIMS(pyConTypes) > 0)
+        pszConTypes = (char *)PyArray_DATA(pyConTypes);
+    if(pyiAcols && PyArray_DIMS(pyiAcols) > 0)
+        paiAcols = (int *)PyArray_DATA(pyiAcols);
+    if(pynAcols && PyArray_DIMS(pynAcols) > 0)
+        panAcols = (int *)PyArray_DATA(pynAcols);
+    if(pyAcoef && PyArray_DIMS(pyAcoef) > 0)
+        padAcoef = (double *)PyArray_DATA(pyAcoef);
+    if(pyArows && PyArray_DIMS(pyArows) > 0)
+        paiArows = (int *)PyArray_DATA(pyArows);
+    if(pyL && PyArray_DIMS(pyL) > 0)
+        padL = (double *)PyArray_DATA(pyL);
+    if(pyU && PyArray_DIMS(pyU) > 0)
+        padU = (double *)PyArray_DATA(pyU);
 
     errorcode = LSloadLPData(pModel,
                              nCons,
@@ -2674,14 +2674,14 @@ PyObject *pyLSloadQCData(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-     if(pyQCrows && pyQCrows->dimensions > 0)
-        paiQCrows = (int *)pyQCrows->data;
-     if(pyQCcols && pyQCcols->dimensions > 0)
-        paiQCcols1 = (int *)pyQCcols->data;
-     if(pyQCcols2 && pyQCcols2->dimensions > 0)
-        paiQCcols2 = (int *)pyQCcols2->data;
-     if(pyQCcoef && pyQCcoef->dimensions > 0)
-        padQCcoef = (double *)pyQCcoef->data;
+     if(pyQCrows && PyArray_DIMS(pyQCrows) > 0)
+        paiQCrows = (int *)PyArray_DATA(pyQCrows);
+     if(pyQCcols && PyArray_DIMS(pyQCcols) > 0)
+        paiQCcols1 = (int *)PyArray_DATA(pyQCcols);
+     if(pyQCcols2 && PyArray_DIMS(pyQCcols2) > 0)
+        paiQCcols2 = (int *)PyArray_DATA(pyQCcols2);
+     if(pyQCcoef && PyArray_DIMS(pyQCcoef) > 0)
+        padQCcoef = (double *)PyArray_DATA(pyQCcoef);
 
     errorcode = LSloadQCData(pModel,
                              nQCnnz,
@@ -2725,14 +2725,14 @@ PyObject *pyLSloadConeData(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyConeTypes && pyConeTypes->dimensions > 0)
-        pszConeTypes = (char *)pyConeTypes->data;
-    if(pyConebegcone && pyConebegcone->dimensions > 0)
-        paiConebegcone = (int *)pyConebegcone->data;
-    if(pyConecols && pyConecols->dimensions > 0)
-        paiConecols = (int *)pyConecols->data;
-    if(pyadConeAlpha && pyadConeAlpha->dimensions > 0)
-        padConeAlpha = (double *)pyadConeAlpha->data;
+    if(pyConeTypes && PyArray_DIMS(pyConeTypes) > 0)
+        pszConeTypes = (char *)PyArray_DATA(pyConeTypes);
+    if(pyConebegcone && PyArray_DIMS(pyConebegcone) > 0)
+        paiConebegcone = (int *)PyArray_DATA(pyConebegcone);
+    if(pyConecols && PyArray_DIMS(pyConecols) > 0)
+        paiConecols = (int *)PyArray_DATA(pyConecols);
+    if(pyadConeAlpha && PyArray_DIMS(pyadConeAlpha) > 0)
+        padConeAlpha = (double *)PyArray_DATA(pyadConeAlpha);
     errorcode = LSloadConeData(pModel,
                                nCone,
                                pszConeTypes,
@@ -2773,14 +2773,14 @@ PyObject *pyLSloadSETSData(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pySETStype && pySETStype->dimensions > 0)
-        pszSETStype = (char *)pySETStype->data;
-    if(pyCARDnum && pyCARDnum->dimensions > 0)
-        paiCARDnum = (int *)pyCARDnum->data;
-    if(pySETSbegcol && pySETSbegcol->dimensions > 0)
-        paiSETSbegcol = (int *)pySETSbegcol->data;
-    if(pySETScols && pySETScols->dimensions > 0)
-        paiSETScols = (int *)pySETScols->data;
+    if(pySETStype && PyArray_DIMS(pySETStype) > 0)
+        pszSETStype = (char *)PyArray_DATA(pySETStype);
+    if(pyCARDnum && PyArray_DIMS(pyCARDnum) > 0)
+        paiCARDnum = (int *)PyArray_DATA(pyCARDnum);
+    if(pySETSbegcol && PyArray_DIMS(pySETSbegcol) > 0)
+        paiSETSbegcol = (int *)PyArray_DATA(pySETSbegcol);
+    if(pySETScols && PyArray_DIMS(pySETScols) > 0)
+        paiSETScols = (int *)PyArray_DATA(pySETScols);
 
     errorcode = LSloadSETSData(pModel,
                                nSETS,
@@ -2820,12 +2820,12 @@ PyObject *pyLSloadSemiContData(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyVars && pyVars->dimensions > 0)
-        paiVars = (int *)pyVars->data;
-    if(pyL && pyL->dimensions > 0)
-        padL = (double *)pyL->data;
-    if(pyU && pyU->dimensions > 0)
-        padU = (double *)pyU->data;
+    if(pyVars && PyArray_DIMS(pyVars) > 0)
+        paiVars = (int *)PyArray_DATA(pyVars);
+    if(pyL && PyArray_DIMS(pyL) > 0)
+        padL = (double *)PyArray_DATA(pyL);
+    if(pyU && PyArray_DIMS(pyU) > 0)
+        padU = (double *)PyArray_DATA(pyU);
 
     errorcode = LSloadSemiContData(pModel,
                                    nSCVars,
@@ -2859,8 +2859,8 @@ PyObject *pyLSloadVarType(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyVarTypes && pyVarTypes->dimensions > 0)
-        pszVarTypes = (char *)pyVarTypes->data;
+    if(pyVarTypes && PyArray_DIMS(pyVarTypes) > 0)
+        pszVarTypes = (char *)PyArray_DATA(pyVarTypes);
 
     errorcode = LSloadVarType(pModel,
                               pszVarTypes);
@@ -2902,18 +2902,18 @@ PyObject *pyLSloadNLPData(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyiNLPcols && pyiNLPcols->dimensions > 0)
-        paiNLPcols = (int *)pyiNLPcols->data;
-    if(pynNLPcols && pynNLPcols->dimensions > 0)
-        panNLPcols = (int *)pynNLPcols->data;
-    if(pyNLPcoef && pyNLPcoef->dimensions > 0)
-        padNLPcoef = (double *)pyNLPcoef->data;
-    if(pyNLProws && pyNLProws->dimensions > 0)
-        paiNLProws = (int *)pyNLProws->data;
-    if(pyiNLPobj && pyiNLPobj->dimensions > 0)
-        paiNLPobj = (int *)pyiNLPobj->data;
-    if(pydNLPobj && pydNLPobj->dimensions > 0)
-        padNLPobj = (double *)pydNLPobj->data;
+    if(pyiNLPcols && PyArray_DIMS(pyiNLPcols) > 0)
+        paiNLPcols = (int *)PyArray_DATA(pyiNLPcols);
+    if(pynNLPcols && PyArray_DIMS(pynNLPcols) > 0)
+        panNLPcols = (int *)PyArray_DATA(pynNLPcols);
+    if(pyNLPcoef && PyArray_DIMS(pyNLPcoef) > 0)
+        padNLPcoef = (double *)PyArray_DATA(pyNLPcoef);
+    if(pyNLProws && PyArray_DIMS(pyNLProws) > 0)
+        paiNLProws = (int *)PyArray_DATA(pyNLProws);
+    if(pyiNLPobj && PyArray_DIMS(pyiNLPobj) > 0)
+        paiNLPobj = (int *)PyArray_DATA(pyiNLPobj);
+    if(pydNLPobj && PyArray_DIMS(pydNLPobj) > 0)
+        padNLPobj = (double *)PyArray_DATA(pydNLPobj);
 
     errorcode = LSloadNLPData(pModel,
                               paiNLPcols,
@@ -2979,32 +2979,32 @@ PyObject *pyLSloadInstruct(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyObjSense && pyObjSense->dimensions > 0)
-        panObjSense = (int *)pyObjSense->data;
-    if(pyConType && pyConType->dimensions > 0)
-        pszConType = (char *)pyConType->data;
-    if(pyVarType && pyVarType->dimensions > 0)
-        pszVarType = (char *)pyVarType->data;
-    if(pyInstruct && pyInstruct->dimensions > 0)
-        panInstruct = (int *)pyInstruct->data;
-    if(pyVars && pyVars->dimensions > 0)
-        paiVars = (int *)pyVars->data;
-    if(pyNumVal && pyNumVal->dimensions > 0)
-        padNumVal = (double *)pyNumVal->data;
-    if(pyVarVal && pyVarVal->dimensions > 0)
-        padVarVal = (double *)pyVarVal->data;
-    if(pyObjBeg && pyObjBeg->dimensions > 0)
-        paiObjBeg = (int *)pyObjBeg->data;
-    if(pyObjLen && pyObjLen->dimensions > 0)
-        panObjLen = (int *)pyObjLen->data;
-    if(pyConBeg && pyConBeg->dimensions > 0)
-        paiConBeg = (int *)pyConBeg->data;
-    if(pyConLen && pyConLen->dimensions > 0)
-        panConLen = (int *)pyConLen->data;
-    if(pyLB && pyLB->dimensions > 0)
-        padLB = (double *)pyLB->data;
-    if(pyUB && pyUB->dimensions > 0)
-        padUB = (double *)pyUB->data;
+    if(pyObjSense && PyArray_DIMS(pyObjSense) > 0)
+        panObjSense = (int *)PyArray_DATA(pyObjSense);
+    if(pyConType && PyArray_DIMS(pyConType) > 0)
+        pszConType = (char *)PyArray_DATA(pyConType);
+    if(pyVarType && PyArray_DIMS(pyVarType) > 0)
+        pszVarType = (char *)PyArray_DATA(pyVarType);
+    if(pyInstruct && PyArray_DIMS(pyInstruct) > 0)
+        panInstruct = (int *)PyArray_DATA(pyInstruct);
+    if(pyVars && PyArray_DIMS(pyVars) > 0)
+        paiVars = (int *)PyArray_DATA(pyVars);
+    if(pyNumVal && PyArray_DIMS(pyNumVal) > 0)
+        padNumVal = (double *)PyArray_DATA(pyNumVal);
+    if(pyVarVal && PyArray_DIMS(pyVarVal) > 0)
+        padVarVal = (double *)PyArray_DATA(pyVarVal);
+    if(pyObjBeg && PyArray_DIMS(pyObjBeg) > 0)
+        paiObjBeg = (int *)PyArray_DATA(pyObjBeg);
+    if(pyObjLen && PyArray_DIMS(pyObjLen) > 0)
+        panObjLen = (int *)PyArray_DATA(pyObjLen);
+    if(pyConBeg && PyArray_DIMS(pyConBeg) > 0)
+        paiConBeg = (int *)PyArray_DATA(pyConBeg);
+    if(pyConLen && PyArray_DIMS(pyConLen) > 0)
+        panConLen = (int *)PyArray_DATA(pyConLen);
+    if(pyLB && PyArray_DIMS(pyLB) > 0)
+        padLB = (double *)PyArray_DATA(pyLB);
+    if(pyUB && PyArray_DIMS(pyUB) > 0)
+        padUB = (double *)PyArray_DATA(pyUB);
 
     errorcode = LSloadInstruct(pModel,
                                nCons,
@@ -3081,32 +3081,32 @@ PyObject *pyLSaddInstruct(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyObjSense && pyObjSense->dimensions > 0)
-        panObjSense = (int *)pyObjSense->data;
-    if(pyConType && pyConType->dimensions > 0)
-        pszConType = (char *)pyConType->data;
-    if(pyVarType && pyVarType->dimensions > 0)
-        pszVarType = (char *)pyVarType->data;
-    if(pyInstruct && pyInstruct->dimensions > 0)
-        panInstruct = (int *)pyInstruct->data;
-    if(pyCons && pyCons->dimensions > 0)
-        paiCons = (int *)pyCons->data;
-    if(pyNumVal && pyNumVal->dimensions > 0)
-        padNumVal = (double *)pyNumVal->data;
-    if(pyVarVal && pyVarVal->dimensions > 0)
-        padVarVal = (double *)pyVarVal->data;
-    if(pyObjBeg && pyObjBeg->dimensions > 0)
-        paiObjBeg = (int *)pyObjBeg->data;
-    if(pyObjLen && pyObjLen->dimensions > 0)
-        panObjLen = (int *)pyObjLen->data;
-    if(pyConBeg && pyConBeg->dimensions > 0)
-        paiConBeg = (int *)pyConBeg->data;
-    if(pyConLen && pyConLen->dimensions > 0)
-        panConLen = (int *)pyConLen->data;
-    if(pyLB && pyLB->dimensions > 0)
-        padLB = (double *)pyLB->data;
-    if(pyUB && pyUB->dimensions > 0)
-        padUB = (double *)pyUB->data;
+    if(pyObjSense && PyArray_DIMS(pyObjSense) > 0)
+        panObjSense = (int *)PyArray_DATA(pyObjSense);
+    if(pyConType && PyArray_DIMS(pyConType) > 0)
+        pszConType = (char *)PyArray_DATA(pyConType);
+    if(pyVarType && PyArray_DIMS(pyVarType) > 0)
+        pszVarType = (char *)PyArray_DATA(pyVarType);
+    if(pyInstruct && PyArray_DIMS(pyInstruct) > 0)
+        panInstruct = (int *)PyArray_DATA(pyInstruct);
+    if(pyCons && PyArray_DIMS(pyCons) > 0)
+        paiCons = (int *)PyArray_DATA(pyCons);
+    if(pyNumVal && PyArray_DIMS(pyNumVal) > 0)
+        padNumVal = (double *)PyArray_DATA(pyNumVal);
+    if(pyVarVal && PyArray_DIMS(pyVarVal) > 0)
+        padVarVal = (double *)PyArray_DATA(pyVarVal);
+    if(pyObjBeg && PyArray_DIMS(pyObjBeg) > 0)
+        paiObjBeg = (int *)PyArray_DATA(pyObjBeg);
+    if(pyObjLen && PyArray_DIMS(pyObjLen) > 0)
+        panObjLen = (int *)PyArray_DATA(pyObjLen);
+    if(pyConBeg && PyArray_DIMS(pyConBeg) > 0)
+        paiConBeg = (int *)PyArray_DATA(pyConBeg);
+    if(pyConLen && PyArray_DIMS(pyConLen) > 0)
+        panConLen = (int *)PyArray_DATA(pyConLen);
+    if(pyLB && PyArray_DIMS(pyLB) > 0)
+        padLB = (double *)PyArray_DATA(pyLB);
+    if(pyUB && PyArray_DIMS(pyUB) > 0)
+        padUB = (double *)PyArray_DATA(pyUB);
 
     errorcode = LSaddInstruct(pModel,
                               nCons,
@@ -3157,10 +3157,10 @@ PyObject *pyLSloadBasis(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyCstatus && pyCstatus->dimensions > 0)
-        panCstatus = (int *)pyCstatus->data;
-    if(pyRstatus && pyRstatus->dimensions > 0)
-        panRstatus = (int *)pyRstatus->data;
+    if(pyCstatus && PyArray_DIMS(pyCstatus) > 0)
+        panCstatus = (int *)PyArray_DATA(pyCstatus);
+    if(pyRstatus && PyArray_DIMS(pyRstatus) > 0)
+        panRstatus = (int *)PyArray_DATA(pyRstatus);
 
     errorcode = LSloadBasis(pModel,
                             panCstatus,
@@ -3192,8 +3192,8 @@ PyObject *pyLSloadVarPriorities(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyCprior && pyCprior->dimensions > 0)
-        panCprior = (int *)pyCprior->data;
+    if(pyCprior && PyArray_DIMS(pyCprior) > 0)
+        panCprior = (int *)PyArray_DATA(pyCprior);
 
     errorcode = LSloadVarPriorities(pModel,
                                     panCprior);
@@ -3253,8 +3253,8 @@ PyObject *pyLSloadVarStartPoint(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyPrimal && pyPrimal->dimensions > 0)
-        padPrimal = (double *)pyPrimal->data;
+    if(pyPrimal && PyArray_DIMS(pyPrimal) > 0)
+        padPrimal = (double *)PyArray_DATA(pyPrimal);
 
     errorcode = LSloadVarStartPoint(pModel,
                                     padPrimal);
@@ -3289,10 +3289,10 @@ PyObject *pyLSloadVarStartPointPartial(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyCols && pyCols->dimensions > 0)
-        paiCols = (int *)pyCols->data;
-    if(pyPrimal && pyPrimal->dimensions > 0)
-        padPrimal = (double *)pyPrimal->data;
+    if(pyCols && PyArray_DIMS(pyCols) > 0)
+        paiCols = (int *)PyArray_DATA(pyCols);
+    if(pyPrimal && PyArray_DIMS(pyPrimal) > 0)
+        padPrimal = (double *)PyArray_DATA(pyPrimal);
 
     errorcode = LSloadVarStartPointPartial(pModel,
                                            nCols,
@@ -3325,8 +3325,8 @@ PyObject *pyLSloadMIPVarStartPoint(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyPrimal && pyPrimal->dimensions > 0)
-        padPrimal = (double *)pyPrimal->data;
+    if(pyPrimal && PyArray_DIMS(pyPrimal) > 0)
+        padPrimal = (double *)PyArray_DATA(pyPrimal);
 
     errorcode = LSloadMIPVarStartPoint(pModel,
                                        padPrimal);
@@ -3361,10 +3361,10 @@ PyObject *pyLSloadMIPVarStartPointPartial(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyCols && pyCols->dimensions > 0)
-        paiCols = (int *)pyCols->data;
-    if(pyPrimal && pyPrimal->dimensions > 0)
-        paiPrimal = (int *)pyPrimal->data;
+    if(pyCols && PyArray_DIMS(pyCols) > 0)
+        paiCols = (int *)PyArray_DATA(pyCols);
+    if(pyPrimal && PyArray_DIMS(pyPrimal) > 0)
+        paiPrimal = (int *)PyArray_DATA(pyPrimal);
 
     errorcode = LSloadMIPVarStartPointPartial(pModel,
                                               nCols,
@@ -3431,10 +3431,10 @@ PyObject *pyLSloadBlockStructure(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyRblock && pyRblock->dimensions > 0)
-        panRblock = (int *)pyRblock->data;
-    if(pyCblock && pyCblock->dimensions > 0)
-        panCblock = (int *)pyCblock->data;
+    if(pyRblock && PyArray_DIMS(pyRblock) > 0)
+        panRblock = (int *)PyArray_DATA(pyRblock);
+    if(pyCblock && PyArray_DIMS(pyCblock) > 0)
+        panCblock = (int *)PyArray_DATA(pyCblock);
 
     errorcode = LSloadBlockStructure(pModel,
                                      nBlock,
@@ -3473,7 +3473,7 @@ PyObject *pyLSoptimize(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyStatus && pyStatus->dimensions > 0)
+    if(pyStatus && PyArray_DIMS(pyStatus) > 0)
         pnStatus = (int *)PyArray_GetPtr(pyStatus,index);
 
     errorcode = LSoptimize(pModel,nMethod,pnStatus);
@@ -3504,7 +3504,7 @@ PyObject *pyLSsolveMIP(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyMIPSolStatus && pyMIPSolStatus->dimensions > 0)
+    if(pyMIPSolStatus && PyArray_DIMS(pyMIPSolStatus) > 0)
         pnMIPSolStatus = (int *)PyArray_GetPtr(pyMIPSolStatus,index);
 
     errorcode = LSsolveMIP(pModel,pnMIPSolStatus);
@@ -3535,7 +3535,7 @@ PyObject *pyLSsolveGOP(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyGOPSolStatus && pyGOPSolStatus->dimensions > 0)
+    if(pyGOPSolStatus && PyArray_DIMS(pyGOPSolStatus) > 0)
         pnGOPSolStatus = (int *)PyArray_GetPtr(pyGOPSolStatus,index);
 
     errorcode = LSsolveGOP(pModel,pnGOPSolStatus);
@@ -3566,7 +3566,7 @@ PyObject *pyLSoptimizeQP(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyQPSolStatus && pyQPSolStatus->dimensions > 0)
+    if(pyQPSolStatus && PyArray_DIMS(pyQPSolStatus) > 0)
         pnQPSolStatus = (int *)PyArray_GetPtr(pyQPSolStatus,index);
 
     errorcode = LSoptimizeQP(pModel,pnQPSolStatus);
@@ -3625,13 +3625,13 @@ PyObject *pyLSsolveSBD(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyStatus && pyStatus->dimensions > 0)
+    if(pyStatus && PyArray_DIMS(pyStatus) > 0)
         pnStatus = (int *)PyArray_GetPtr(pyStatus,index);
 
     errorcode = LSsolveSBD(pModel,
                            nStages,
-                           (int *)panRowStage->data,
-                           (int *)panColStage->data,
+                           (int *)PyArray_DATA(panRowStage),
+                           (int *)PyArray_DATA(panColStage),
                            pnStatus);
 
     if (errorcode != 0){
@@ -3665,7 +3665,7 @@ PyObject *pyLSgetInfo(PyObject *self, PyObject *args)
       CHECK_MODEL;
     }
 
-    if(pyResult && pyResult->dimensions > 0)
+    if(pyResult && PyArray_DIMS(pyResult) > 0)
         pvResult = (void *)PyArray_GetPtr(pyResult,index);
 
     errorcode = LSgetInfo(pModel,nQuery,pvResult);
@@ -3696,7 +3696,7 @@ PyObject *pyLSgetPrimalSolution(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyPrimal && pyPrimal->dimensions > 0)
+    if(pyPrimal && PyArray_DIMS(pyPrimal) > 0)
         padPrimal = (double *)PyArray_GetPtr(pyPrimal,index);
 
     errorcode = LSgetPrimalSolution(pModel,padPrimal);
@@ -3727,7 +3727,7 @@ PyObject *pyLSgetDualSolution(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyDual && pyDual->dimensions > 0)
+    if(pyDual && PyArray_DIMS(pyDual) > 0)
         padDual = (double *)PyArray_GetPtr(pyDual,index);
 
     errorcode = LSgetDualSolution(pModel,padDual);
@@ -3758,7 +3758,7 @@ PyObject *pyLSgetReducedCosts(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyRedcosts && pyRedcosts->dimensions > 0)
+    if(pyRedcosts && PyArray_DIMS(pyRedcosts) > 0)
         padRedcosts = (double *)PyArray_GetPtr(pyRedcosts,index);
 
     errorcode = LSgetReducedCosts(pModel,padRedcosts);
@@ -3789,7 +3789,7 @@ PyObject *pyLSgetReducedCostsCone(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyRedcosts && pyRedcosts->dimensions > 0)
+    if(pyRedcosts && PyArray_DIMS(pyRedcosts) > 0)
         padRedcosts = (double *)PyArray_GetPtr(pyRedcosts,index);
 
     errorcode = LSgetReducedCostsCone(pModel,padRedcosts);
@@ -3820,7 +3820,7 @@ PyObject *pyLSgetSlacks(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pySlacks && pySlacks->dimensions > 0)
+    if(pySlacks && PyArray_DIMS(pySlacks) > 0)
         padSlacks = (double *)PyArray_GetPtr(pySlacks,index);
 
     errorcode = LSgetSlacks(pModel,padSlacks);
@@ -3852,9 +3852,9 @@ PyObject *pyLSgetBasis(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyCstatus && pyCstatus->dimensions > 0)
+    if(pyCstatus && PyArray_DIMS(pyCstatus) > 0)
         panCstatus = (int *)PyArray_GetPtr(pyCstatus,index);
-    if(pyRstatus && pyRstatus->dimensions > 0)
+    if(pyRstatus && PyArray_DIMS(pyRstatus) > 0)
         panRstatus = (int *)PyArray_GetPtr(pyRstatus,index);
 
     errorcode = LSgetBasis(pModel,panCstatus,panRstatus);
@@ -3887,7 +3887,7 @@ PyObject *pyLSgetSolution(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyVal && pyVal->dimensions > 0)
+    if(pyVal && PyArray_DIMS(pyVal) > 0)
         padVal = (double *)PyArray_GetPtr(pyVal,index);
 
     errorcode = LSgetSolution(pModel,nWhich,padVal);
@@ -3918,7 +3918,7 @@ PyObject *pyLSgetMIPPrimalSolution(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyPrimal && pyPrimal->dimensions > 0)
+    if(pyPrimal && PyArray_DIMS(pyPrimal) > 0)
         padPrimal = (double *)PyArray_GetPtr(pyPrimal,index);
 
     errorcode = LSgetMIPPrimalSolution(pModel,padPrimal);
@@ -3949,7 +3949,7 @@ PyObject *pyLSgetMIPDualSolution(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyDual && pyDual->dimensions > 0)
+    if(pyDual && PyArray_DIMS(pyDual) > 0)
         padDual = (double *)PyArray_GetPtr(pyDual,index);
 
     errorcode = LSgetMIPDualSolution(pModel,padDual);
@@ -3980,7 +3980,7 @@ PyObject *pyLSgetMIPReducedCosts(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyRedcosts && pyRedcosts->dimensions > 0)
+    if(pyRedcosts && PyArray_DIMS(pyRedcosts) > 0)
         padRedcosts = (double *)PyArray_GetPtr(pyRedcosts,index);
 
     errorcode = LSgetMIPReducedCosts(pModel,padRedcosts);
@@ -4011,7 +4011,7 @@ PyObject *pyLSgetMIPSlacks(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pySlacks && pySlacks->dimensions > 0)
+    if(pySlacks && PyArray_DIMS(pySlacks) > 0)
         padSlacks = (double *)PyArray_GetPtr(pySlacks,index);
 
     errorcode = LSgetMIPSlacks(pModel,padSlacks);
@@ -4043,9 +4043,9 @@ PyObject *pyLSgetMIPBasis(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyCstatus && pyCstatus->dimensions > 0)
+    if(pyCstatus && PyArray_DIMS(pyCstatus) > 0)
         panCstatus = (int *)PyArray_GetPtr(pyCstatus,index);
-    if(pyRstatus && pyRstatus->dimensions > 0)
+    if(pyRstatus && PyArray_DIMS(pyRstatus) > 0)
         panRstatus = (int *)PyArray_GetPtr(pyRstatus,index);
 
     errorcode = LSgetMIPBasis(pModel,panCstatus,panRstatus);
@@ -4076,7 +4076,7 @@ PyObject *pyLSgetNextBestMIPSol(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyIntModStatus && pyIntModStatus->dimensions > 0)
+    if(pyIntModStatus && PyArray_DIMS(pyIntModStatus) > 0)
         pnIntModStatus = (int *)PyArray_GetPtr(pyIntModStatus,index);
 
     errorcode = LSgetNextBestMIPSol(pModel,pnIntModStatus);
@@ -4128,25 +4128,25 @@ PyObject *pyLSgetLPData(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyObjSense && pyObjSense->dimensions > 0)
+    if(pyObjSense && PyArray_DIMS(pyObjSense) > 0)
         pnObjSense = (int *)PyArray_GetPtr(pyObjSense,index);
-    if(pyiAcols && pyiAcols->dimensions > 0)
+    if(pyiAcols && PyArray_DIMS(pyiAcols) > 0)
         paiAcols = (int *)PyArray_GetPtr(pyiAcols,index);
-    if(pynAcols && pynAcols->dimensions > 0)
+    if(pynAcols && PyArray_DIMS(pynAcols) > 0)
         panAcols = (int *)PyArray_GetPtr(pynAcols,index);
-    if(pyArows && pyArows->dimensions > 0)
+    if(pyArows && PyArray_DIMS(pyArows) > 0)
         paiArows = (int *)PyArray_GetPtr(pyArows,index);
-    if(pyObjConst && pyObjConst->dimensions > 0)
+    if(pyObjConst && PyArray_DIMS(pyObjConst) > 0)
         pdObjConst = (double *)PyArray_GetPtr(pyObjConst,index);
-    if(pyC && pyC->dimensions > 0)
+    if(pyC && PyArray_DIMS(pyC) > 0)
         padC = (double *)PyArray_GetPtr(pyC,index);
-    if(pyB && pyB->dimensions > 0)
+    if(pyB && PyArray_DIMS(pyB) > 0)
         padB = (double *)PyArray_GetPtr(pyB,index);
-    if(pyAcoef && pyAcoef->dimensions > 0)
+    if(pyAcoef && PyArray_DIMS(pyAcoef) > 0)
         padAcoef = (double *)PyArray_GetPtr(pyAcoef,index);
-    if(pyL && pyL->dimensions > 0)
+    if(pyL && PyArray_DIMS(pyL) > 0)
         padL = (double *)PyArray_GetPtr(pyL,index);
-    if(pyU && pyU->dimensions > 0)
+    if(pyU && PyArray_DIMS(pyU) > 0)
         padU = (double *)PyArray_GetPtr(pyU,index);
     if(pyConTypes)
         pachConTypes = (char *)PyArray_GetPtr(pyConTypes,index);
@@ -4197,13 +4197,13 @@ PyObject *pyLSgetQCData(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyQCrows && pyQCrows->dimensions > 0)
+    if(pyQCrows && PyArray_DIMS(pyQCrows) > 0)
         paiQCrows = (int *)PyArray_GetPtr(pyQCrows,index);
-    if(pyQCcols1 && pyQCcols1->dimensions > 0)
+    if(pyQCcols1 && PyArray_DIMS(pyQCcols1) > 0)
         paiQCcols1 = (int *)PyArray_GetPtr(pyQCcols1,index);
-    if(pyQCcols2 && pyQCcols2->dimensions > 0)
+    if(pyQCcols2 && PyArray_DIMS(pyQCcols2) > 0)
         paiQCcols2 = (int *)PyArray_GetPtr(pyQCcols2,index);
-    if(pyQCcoef && pyQCcoef->dimensions > 0)
+    if(pyQCcoef && PyArray_DIMS(pyQCcoef) > 0)
         padQCcoef = (double *)PyArray_GetPtr(pyQCcoef,index);
 
 
@@ -4248,13 +4248,13 @@ PyObject *pyLSgetQCDatai(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyQCnnz && pyQCnnz->dimensions > 0)
+    if(pyQCnnz && PyArray_DIMS(pyQCnnz) > 0)
         pnQCnnz = (int *)PyArray_GetPtr(pyQCnnz,index);
-    if(pyQCcols1 && pyQCcols1->dimensions > 0)
+    if(pyQCcols1 && PyArray_DIMS(pyQCcols1) > 0)
         paiQCcols1 = (int *)PyArray_GetPtr(pyQCcols1,index);
-    if(pyQCcols2 && pyQCcols2->dimensions > 0)
+    if(pyQCcols2 && PyArray_DIMS(pyQCcols2) > 0)
         paiQCcols2 = (int *)PyArray_GetPtr(pyQCcols2,index);
-    if(pyQCcoef && pyQCcoef->dimensions > 0)
+    if(pyQCcoef && PyArray_DIMS(pyQCcoef) > 0)
         padQCcoef = (double *)PyArray_GetPtr(pyQCcoef,index);
 
 
@@ -4325,7 +4325,7 @@ PyObject *pyLSgetVarStartPoint(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyPrimal && pyPrimal->dimensions > 0)
+    if(pyPrimal && PyArray_DIMS(pyPrimal) > 0)
         padPrimal = (double *)PyArray_GetPtr(pyPrimal,index);
 
     errorcode = LSgetVarStartPoint(pModel,
@@ -4361,11 +4361,11 @@ PyObject *pyLSgetVarStartPointPartial(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pynCols && pynCols->dimensions > 0)
+    if(pynCols && PyArray_DIMS(pynCols) > 0)
         panCols = (int *)PyArray_GetPtr(pynCols,index);
-    if(pyiCols && pyiCols->dimensions > 0)
+    if(pyiCols && PyArray_DIMS(pyiCols) > 0)
         paiCols = (int *)PyArray_GetPtr(pyiCols,index);
-    if(pyPrimal && pyPrimal->dimensions > 0)
+    if(pyPrimal && PyArray_DIMS(pyPrimal) > 0)
         padPrimal = (double *)PyArray_GetPtr(pyPrimal,index);
 
     errorcode = LSgetVarStartPointPartial(pModel,
@@ -4403,11 +4403,11 @@ PyObject *pyLSgetMIPVarStartPointPartial(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pynCols && pynCols->dimensions > 0)
+    if(pynCols && PyArray_DIMS(pynCols) > 0)
         panCols = (int *)PyArray_GetPtr(pynCols,index);
-    if(pyiCols && pyiCols->dimensions > 0)
+    if(pyiCols && PyArray_DIMS(pyiCols) > 0)
         paiCols = (int *)PyArray_GetPtr(pyiCols,index);
-    if(pyPrimal && pyPrimal->dimensions > 0)
+    if(pyPrimal && PyArray_DIMS(pyPrimal) > 0)
         paiPrimal = (int *)PyArray_GetPtr(pyPrimal,index);
 
     errorcode = LSgetMIPVarStartPointPartial(pModel,
@@ -4442,7 +4442,7 @@ PyObject *pyLSgetMIPVarStartPoint(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyPrimal && pyPrimal->dimensions > 0)
+    if(pyPrimal && PyArray_DIMS(pyPrimal) > 0)
         padPrimal = (double *)PyArray_GetPtr(pyPrimal,index);
 
     errorcode = LSgetMIPVarStartPoint(pModel,
@@ -4486,19 +4486,19 @@ PyObject *pyLSgetSETSData(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyNsets && pyNsets->dimensions > 0)
+    if(pyNsets && PyArray_DIMS(pyNsets) > 0)
         piNsets = (int *)PyArray_GetPtr(pyNsets,index);
-    if(pyNtnz && pyNtnz->dimensions > 0)
+    if(pyNtnz && PyArray_DIMS(pyNtnz) > 0)
         piNtnz = (int *)PyArray_GetPtr(pyNtnz,index);
     if(pySETtype)
         pachSETtype = (char *)PyArray_GetPtr(pySETtype,index);
-    if(pyCardnum && pyCardnum->dimensions > 0)
+    if(pyCardnum && PyArray_DIMS(pyCardnum) > 0)
         piCardnum = (int *)PyArray_GetPtr(pyCardnum,index);
-    if(pyNnz && pyNnz->dimensions > 0)
+    if(pyNnz && PyArray_DIMS(pyNnz) > 0)
         piNnz = (int *)PyArray_GetPtr(pyNnz,index);
-    if(pyBegset && pyBegset->dimensions > 0)
+    if(pyBegset && PyArray_DIMS(pyBegset) > 0)
         piBegset = (int *)PyArray_GetPtr(pyBegset,index);
-    if(pyVarndx && pyVarndx->dimensions > 0)
+    if(pyVarndx && PyArray_DIMS(pyVarndx) > 0)
         piVarndx = (int *)PyArray_GetPtr(pyVarndx,index);
 
 
@@ -4549,11 +4549,11 @@ PyObject *pyLSgetSETSDatai(PyObject *self, PyObject *args)
 
     if(pySETtype)
         pachSETtype = (char *)PyArray_GetPtr(pySETtype,index);
-    if(pyCardnum && pyCardnum->dimensions > 0)
+    if(pyCardnum && PyArray_DIMS(pyCardnum) > 0)
         piCardnum = (int *)PyArray_GetPtr(pyCardnum,index);
-    if(pyNnz && pyNnz->dimensions > 0)
+    if(pyNnz && PyArray_DIMS(pyNnz) > 0)
         piNnz = (int *)PyArray_GetPtr(pyNnz,index);
-    if(pyVarndx && pyVarndx->dimensions > 0)
+    if(pyVarndx && PyArray_DIMS(pyVarndx) > 0)
         piVarndx = (int *)PyArray_GetPtr(pyVarndx,index);
 
 
@@ -4598,13 +4598,13 @@ PyObject *pyLSgetSemiContData(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyNvar && pyNvar->dimensions > 0)
+    if(pyNvar && PyArray_DIMS(pyNvar) > 0)
         piNvars = (int *)PyArray_GetPtr(pyNvar,index);
-    if(pyVarndx && pyVarndx->dimensions > 0)
+    if(pyVarndx && PyArray_DIMS(pyVarndx) > 0)
         piVarndx = (int *)PyArray_GetPtr(pyVarndx,index);
-    if(pyL && pyL->dimensions > 0)
+    if(pyL && PyArray_DIMS(pyL) > 0)
         padL = (double *)PyArray_GetPtr(pyL,index);
-    if(pyU && pyU->dimensions > 0)
+    if(pyU && PyArray_DIMS(pyU) > 0)
         padU = (double *)PyArray_GetPtr(pyU,index);
 
 
@@ -4659,17 +4659,17 @@ PyObject *pyLSgetLPVariableDataj(PyObject *self, PyObject *args)
 
     if(pyVartype)
         pachVartype = (char *)PyArray_GetPtr(pyVartype,index);
-    if(pyC && pyC->dimensions > 0)
+    if(pyC && PyArray_DIMS(pyC) > 0)
         padC = (double *)PyArray_GetPtr(pyC,index);
-    if(pyL && pyL->dimensions > 0)
+    if(pyL && PyArray_DIMS(pyL) > 0)
         padL = (double *)PyArray_GetPtr(pyL,index);
-    if(pyU && pyU->dimensions > 0)
+    if(pyU && PyArray_DIMS(pyU) > 0)
         padU = (double *)PyArray_GetPtr(pyU,index);
-    if(pyAnnz && pyAnnz->dimensions > 0)
+    if(pyAnnz && PyArray_DIMS(pyAnnz) > 0)
         pnAnnz = (int *)PyArray_GetPtr(pyAnnz,index);
-    if(pyArows && pyArows->dimensions > 0)
+    if(pyArows && PyArray_DIMS(pyArows) > 0)
         paiArows = (int *)PyArray_GetPtr(pyArows,index);
-    if(pyAcoef && pyAcoef->dimensions > 0)
+    if(pyAcoef && PyArray_DIMS(pyAcoef) > 0)
         padAcoef = (double *)PyArray_GetPtr(pyAcoef,index);
 
 
@@ -4748,7 +4748,7 @@ PyObject *pyLSgetVariableIndex(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyVar && pyVar->dimensions > 0)
+    if(pyVar && PyArray_DIMS(pyVar) > 0)
         piVar = (int *)PyArray_GetPtr(pyVar,index);
 
     errorcode = LSgetVariableIndex(pModel,
@@ -4820,7 +4820,7 @@ PyObject *pyLSgetConstraintIndex(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyCon && pyCon->dimensions > 0)
+    if(pyCon && PyArray_DIMS(pyCon) > 0)
         piCon = (int *)PyArray_GetPtr(pyCon,index);
 
     errorcode = LSgetConstraintIndex(pModel,
@@ -4863,7 +4863,7 @@ PyObject *pyLSgetConstraintDatai(PyObject *self, PyObject *args)
         pachConType = (char *)PyArray_GetPtr(pyConType,index);
     if(pyIsNlp)
         pachIsNlp = (char *)PyArray_GetPtr(pyIsNlp,index);
-    if(pyB && pyB->dimensions > 0)
+    if(pyB && PyArray_DIMS(pyB) > 0)
         pdB = (double *)PyArray_GetPtr(pyB,index);
 
     errorcode = LSgetConstraintDatai(pModel,
@@ -4910,13 +4910,13 @@ PyObject *pyLSgetLPConstraintDatai(PyObject *self, PyObject *args)
 
     if(pyConType)
         pachConType = (char *)PyArray_GetPtr(pyConType,index);
-    if(pyB && pyB->dimensions > 0)
+    if(pyB && PyArray_DIMS(pyB) > 0)
         pdB = (double *)PyArray_GetPtr(pyB,index);
-    if(pyNnz && pyNnz->dimensions > 0)
+    if(pyNnz && PyArray_DIMS(pyNnz) > 0)
         pnNnz = (int *)PyArray_GetPtr(pyNnz,index);
-    if(pyVar && pyVar->dimensions > 0)
+    if(pyVar && PyArray_DIMS(pyVar) > 0)
         piVar = (int *)PyArray_GetPtr(pyVar,index);
-    if(pyAcoef && pyAcoef->dimensions > 0)
+    if(pyAcoef && PyArray_DIMS(pyAcoef) > 0)
         pdAcoef = (double *)PyArray_GetPtr(pyAcoef,index);
 
     errorcode = LSgetLPConstraintDatai(pModel,
@@ -4992,7 +4992,7 @@ PyObject *pyLSgetConeIndex(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyCone && pyCone->dimensions > 0)
+    if(pyCone && PyArray_DIMS(pyCone) > 0)
         piCone = (int *)PyArray_GetPtr(pyCone,index);
 
     errorcode = LSgetConeIndex(pModel,
@@ -5035,11 +5035,11 @@ PyObject *pyLSgetConeDatai(PyObject *self, PyObject *args)
 
     if(pyConeType)
         pachConeType = (char *)PyArray_GetPtr(pyConeType,index);
-    if(pyNnz && pyNnz->dimensions > 0)
+    if(pyNnz && PyArray_DIMS(pyNnz) > 0)
         piNnz = (int *)PyArray_GetPtr(pyNnz,index);
-    if(pyCols && pyCols->dimensions > 0)
+    if(pyCols && PyArray_DIMS(pyCols) > 0)
         paiCols = (int *)PyArray_GetPtr(pyCols,index);
-    if(pydConeAlpha && pydConeAlpha->dimensions > 0)
+    if(pydConeAlpha && PyArray_DIMS(pydConeAlpha) > 0)
         pdConeAlpha = (double *)PyArray_GetPtr(pydConeAlpha,index);
     errorcode = LSgetConeDatai(pModel,
                                iCone,
@@ -5092,19 +5092,19 @@ PyObject *pyLSgetNLPData(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyiNLPcols && pyiNLPcols->dimensions > 0)
+    if(pyiNLPcols && PyArray_DIMS(pyiNLPcols) > 0)
         paiNLPcols = (int *)PyArray_GetPtr(pyiNLPcols,index);
-    if(pynNLPcols && pynNLPcols->dimensions > 0)
+    if(pynNLPcols && PyArray_DIMS(pynNLPcols) > 0)
         panNLPcols = (int *)PyArray_GetPtr(pynNLPcols,index);
-    if(pyNLPcoef && pyNLPcoef->dimensions > 0)
+    if(pyNLPcoef && PyArray_DIMS(pyNLPcoef) > 0)
         padNLPcoef = (double *)PyArray_GetPtr(pyNLPcoef,index);
-    if(pyNLProws && pyNLProws->dimensions > 0)
+    if(pyNLProws && PyArray_DIMS(pyNLProws) > 0)
         paiNLProws = (int *)PyArray_GetPtr(pyNLProws,index);
-    if(pynNLPobj && pynNLPobj->dimensions > 0)
+    if(pynNLPobj && PyArray_DIMS(pynNLPobj) > 0)
         pnNLPobj = (int *)PyArray_GetPtr(pynNLPobj,index);
-    if(pyiNLPobj && pyiNLPobj->dimensions > 0)
+    if(pyiNLPobj && PyArray_DIMS(pyiNLPobj) > 0)
         paiNLPobj = (int *)PyArray_GetPtr(pyiNLPobj,index);
-    if(pydNLPobj && pydNLPobj->dimensions > 0)
+    if(pydNLPobj && PyArray_DIMS(pydNLPobj) > 0)
         padNLPobj = (double *)PyArray_GetPtr(pydNLPobj,index);
     if(pyNLPConTypes)
         pachNLPConTypes = (char *)PyArray_GetPtr(pyNLPConTypes,index);
@@ -5152,11 +5152,11 @@ PyObject *pyLSgetNLPConstraintDatai(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyNnz && pyNnz->dimensions > 0)
+    if(pyNnz && PyArray_DIMS(pyNnz) > 0)
         pnNnz = (int *)PyArray_GetPtr(pyNnz,index);
-    if(pyNLPcols && pyNLPcols->dimensions > 0)
+    if(pyNLPcols && PyArray_DIMS(pyNLPcols) > 0)
         paiNLPcols = (int *)PyArray_GetPtr(pyNLPcols,index);
-    if(pyNLPcoef && pyNLPcoef->dimensions > 0)
+    if(pyNLPcoef && PyArray_DIMS(pyNLPcoef) > 0)
         padNLPcoef = (double *)PyArray_GetPtr(pyNLPcoef,index);
 
     errorcode = LSgetNLPConstraintDatai(pModel,
@@ -5197,11 +5197,11 @@ PyObject *pyLSgetNLPVariableDataj(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyNnz && pyNnz->dimensions > 0)
+    if(pyNnz && PyArray_DIMS(pyNnz) > 0)
         pnNnz = (int *)PyArray_GetPtr(pyNnz,index);
-    if(pyNLProws && pyNLProws->dimensions > 0)
+    if(pyNLProws && PyArray_DIMS(pyNLProws) > 0)
         panNLProws = (int *)PyArray_GetPtr(pyNLProws,index);
-    if(pyNLPcoef && pyNLPcoef->dimensions > 0)
+    if(pyNLPcoef && PyArray_DIMS(pyNLPcoef) > 0)
         padNLPcoef = (double *)PyArray_GetPtr(pyNLPcoef,index);
 
     errorcode = LSgetNLPVariableDataj(pModel,
@@ -5240,11 +5240,11 @@ PyObject *pyLSgetNLPObjectiveData(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyNLPobjnnz && pyNLPobjnnz->dimensions > 0)
+    if(pyNLPobjnnz && PyArray_DIMS(pyNLPobjnnz) > 0)
         pnNLPobjnnz = (int *)PyArray_GetPtr(pyNLPobjnnz,index);
-    if(pyiNLPobj && pyiNLPobj->dimensions > 0)
+    if(pyiNLPobj && PyArray_DIMS(pyiNLPobj) > 0)
         paiNLPobj = (int *)PyArray_GetPtr(pyiNLPobj,index);
-    if(pydNLPobj && pydNLPobj->dimensions > 0)
+    if(pydNLPobj && PyArray_DIMS(pydNLPobj) > 0)
         padNLPobj = (double *)PyArray_GetPtr(pydNLPobj,index);
 
     errorcode = LSgetNLPObjectiveData(pModel,
@@ -5338,29 +5338,29 @@ PyObject *pyLSgetInstruct(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyObjSense && pyObjSense->dimensions > 0)
+    if(pyObjSense && PyArray_DIMS(pyObjSense) > 0)
         pnObjSense = (int *)PyArray_GetPtr(pyObjSense,index);
     if(pyConTyp)
         pachConType = (char *)PyArray_GetPtr(pyConTyp,index);
     if(pyVarType)
         pachVarType = (char *)PyArray_GetPtr(pyVarType,index);
-    if(pyCode && pyCode->dimensions > 0)
+    if(pyCode && PyArray_DIMS(pyCode) > 0)
         panCode = (int *)PyArray_GetPtr(pyCode,index);
-    if(pyNumVa && pyNumVa->dimensions > 0)
+    if(pyNumVa && PyArray_DIMS(pyNumVa) > 0)
         padNumVal = (double *)PyArray_GetPtr(pyNumVa,index);
-    if(pyVarVal && pyVarVal->dimensions > 0)
+    if(pyVarVal && PyArray_DIMS(pyVarVal) > 0)
         padVarVal = (double *)PyArray_GetPtr(pyVarVal,index);
-    if(pyObjBeg && pyObjBeg->dimensions > 0)
+    if(pyObjBeg && PyArray_DIMS(pyObjBeg) > 0)
         panObjBeg = (int *)PyArray_GetPtr(pyObjBeg,index);
-    if(pyObjLength && pyObjLength->dimensions > 0)
+    if(pyObjLength && PyArray_DIMS(pyObjLength) > 0)
         panObjLength = (int *)PyArray_GetPtr(pyObjLength,index);
-    if(pyConBeg && pyConBeg->dimensions > 0)
+    if(pyConBeg && PyArray_DIMS(pyConBeg) > 0)
         panConBeg = (int *)PyArray_GetPtr(pyConBeg,index);
-    if(pyConLength && pyConLength->dimensions > 0)
+    if(pyConLength && PyArray_DIMS(pyConLength) > 0)
         panConLength = (int *)PyArray_GetPtr(pyConLength,index);
-    if(pyLwrBnd && pyLwrBnd->dimensions > 0)
+    if(pyLwrBnd && PyArray_DIMS(pyLwrBnd) > 0)
         padLwrBnd = (double *)PyArray_GetPtr(pyLwrBnd,index);
-    if(pyUprBnd && pyUprBnd->dimensions > 0)
+    if(pyUprBnd && PyArray_DIMS(pyUprBnd) > 0)
         padUprBnd = (double *)PyArray_GetPtr(pyUprBnd,index);
 
     errorcode = LSgetInstruct(pModel,
@@ -5406,11 +5406,11 @@ PyObject *pyLScalinfeasMIPsolution(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyIntPfeas && pyIntPfeas->dimensions > 0)
+    if(pyIntPfeas && PyArray_DIMS(pyIntPfeas) > 0)
         pdIntPfeas = (double *)PyArray_GetPtr(pyIntPfeas,index);
-    if(pyConsPfeas && pyConsPfeas->dimensions > 0)
+    if(pyConsPfeas && PyArray_DIMS(pyConsPfeas) > 0)
         pbConsPfeas = (double *)PyArray_GetPtr(pyConsPfeas,index);
-    if(pyPrimalMipsol && pyPrimalMipsol->dimensions > 0)
+    if(pyPrimalMipsol && PyArray_DIMS(pyPrimalMipsol) > 0)
         pdPrimalMipsol = (double *)PyArray_GetPtr(pyPrimalMipsol,index);
 
     errorcode = LScalinfeasMIPsolution(pModel,
@@ -5457,15 +5457,15 @@ PyObject *pyLSgetRoundMIPsolution(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyPrimal && pyPrimal->dimensions > 0)
+    if(pyPrimal && PyArray_DIMS(pyPrimal) > 0)
         padPrimal = (double *)PyArray_GetPtr(pyPrimal,index);
-    if(pyPrimalRound && pyPrimalRound->dimensions > 0)
+    if(pyPrimalRound && PyArray_DIMS(pyPrimalRound) > 0)
         padPrimalRound = (double *)PyArray_GetPtr(pyPrimalRound,index);
-    if(pyObjRound && pyObjRound->dimensions > 0)
+    if(pyObjRound && PyArray_DIMS(pyObjRound) > 0)
         padObjRound = (double *)PyArray_GetPtr(pyObjRound,index);
-    if(pyPfeasRound && pyPfeasRound->dimensions > 0)
+    if(pyPfeasRound && PyArray_DIMS(pyPfeasRound) > 0)
         padPfeasRound = (double *)PyArray_GetPtr(pyPfeasRound,index);
-    if(pystatus && pystatus->dimensions > 0)
+    if(pystatus && PyArray_DIMS(pystatus) > 0)
         pnstatus = (int *)PyArray_GetPtr(pystatus,index);
 
     errorcode = LSgetRoundMIPsolution(pModel,
@@ -5509,11 +5509,11 @@ PyObject *pyLSgetDuplicateColumns(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pySets && pySets->dimensions > 0)
+    if(pySets && PyArray_DIMS(pySets) > 0)
         pnSets = (int *)PyArray_GetPtr(pySets,index);
-    if(pySetsBeg && pySetsBeg->dimensions > 0)
+    if(pySetsBeg && PyArray_DIMS(pySetsBeg) > 0)
         paiSetsBeg = (int *)PyArray_GetPtr(pySetsBeg,index);
-    if(pyCols && pyCols->dimensions > 0)
+    if(pyCols && PyArray_DIMS(pyCols) > 0)
         paiCols = (int *)PyArray_GetPtr(pyCols,index);
 
     errorcode = LSgetDuplicateColumns(pModel,
@@ -5549,7 +5549,7 @@ PyObject *pyLSgetRangeData(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyR && pyR->dimensions > 0)
+    if(pyR && PyArray_DIMS(pyR) > 0)
         padR = (double *)PyArray_GetPtr(pyR,index);
 
     errorcode = LSgetRangeData(pModel,
@@ -5596,18 +5596,18 @@ PyObject *pyLSaddConstraints(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyConTypes && pyConTypes->dimensions > 0)
-        pszConTypes = (char *)pyConTypes->data;
-    if(pyConNames && pyConNames->dimensions > 0)
-        paszConNames = (char **)pyConNames->data;
-    if(pyArows && pyArows->dimensions > 0)
-        paiArows = (int *)pyArows->data;
-    if(pyAcoef && pyAcoef->dimensions > 0)
-        padAcoef = (double *)pyAcoef->data;
-    if(pyAcols && pyAcols->dimensions > 0)
-        paiAcols = (int *)pyAcols->data;
-    if(pyB && pyB->dimensions > 0)
-        padB = (double *)pyB->data;
+    if(pyConTypes && PyArray_DIMS(pyConTypes) > 0)
+        pszConTypes = (char *)PyArray_DATA(pyConTypes);
+    if(pyConNames && PyArray_DIMS(pyConNames) > 0)
+        paszConNames = (char **)PyArray_DATA(pyConNames);
+    if(pyArows && PyArray_DIMS(pyArows) > 0)
+        paiArows = (int *)PyArray_DATA(pyArows);
+    if(pyAcoef && PyArray_DIMS(pyAcoef) > 0)
+        padAcoef = (double *)PyArray_DATA(pyAcoef);
+    if(pyAcols && PyArray_DIMS(pyAcols) > 0)
+        paiAcols = (int *)PyArray_DATA(pyAcols);
+    if(pyB && PyArray_DIMS(pyB) > 0)
+        padB = (double *)PyArray_DATA(pyB);
 
     errorcode = LSaddConstraints(pModel,
                                  nNumaddcons,
@@ -5660,24 +5660,24 @@ PyObject *pyLSaddVariables(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyVarTypes && pyVarTypes->dimensions > 0)
-        pszVarTypes = (char *)pyVarTypes->data;
-    if(pyVarNames && pyVarNames->dimensions > 0)
-        paszVarNames = (char **)pyVarNames->data;
-    if(pyiAcols && pyiAcols->dimensions > 0)
-        paiAcols = (int *)pyiAcols->data;
-    if(pynAcols && pynAcols->dimensions > 0)
-        panAcols = (int *)pynAcols->data;
-    if(pyAcoef && pyAcoef->dimensions > 0)
-        padAcoef = (double *)pyAcoef->data;
-    if(pyArows && pyArows->dimensions > 0)
-        paiArows = (int *)pyArows->data;
-    if(pyC && pyC->dimensions > 0)
-        padC = (double *)pyC->data;
-    if(pyL && pyL->dimensions > 0)
-        padL = (double *)pyL->data;
-    if(pyU && pyU->dimensions > 0)
-        padU = (double *)pyU->data;
+    if(pyVarTypes && PyArray_DIMS(pyVarTypes) > 0)
+        pszVarTypes = (char *)PyArray_DATA(pyVarTypes);
+    if(pyVarNames && PyArray_DIMS(pyVarNames) > 0)
+        paszVarNames = (char **)PyArray_DATA(pyVarNames);
+    if(pyiAcols && PyArray_DIMS(pyiAcols) > 0)
+        paiAcols = (int *)PyArray_DATA(pyiAcols);
+    if(pynAcols && PyArray_DIMS(pynAcols) > 0)
+        panAcols = (int *)PyArray_DATA(pynAcols);
+    if(pyAcoef && PyArray_DIMS(pyAcoef) > 0)
+        padAcoef = (double *)PyArray_DATA(pyAcoef);
+    if(pyArows && PyArray_DIMS(pyArows) > 0)
+        paiArows = (int *)PyArray_DATA(pyArows);
+    if(pyC && PyArray_DIMS(pyC) > 0)
+        padC = (double *)PyArray_DATA(pyC);
+    if(pyL && PyArray_DIMS(pyL) > 0)
+        padL = (double *)PyArray_DATA(pyL);
+    if(pyU && PyArray_DIMS(pyU) > 0)
+        padU = (double *)PyArray_DATA(pyU);
 
     errorcode = LSaddVariables(pModel,
                                nNumaddvars,
@@ -5726,16 +5726,16 @@ PyObject *pyLSaddCones(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyConeTypes && pyConeTypes->dimensions > 0)
-        pszConeTypes = (char *)pyConeTypes->data;
-    if(pyConenames && pyConenames->dimensions > 0)
-        paszConenames = (char **)pyConenames->data;
-    if(pyConebegcol && pyConebegcol->dimensions > 0)
-        paiConebegcol = (int *)pyConebegcol->data;
-    if(pyConecols && pyConecols->dimensions > 0)
-        paiConecols = (int *)pyConecols->data;
-    if(pyadConeAlpha && pyadConeAlpha->dimensions > 0)
-        padConeAlpha = (double *)pyadConeAlpha->data;
+    if(pyConeTypes && PyArray_DIMS(pyConeTypes) > 0)
+        pszConeTypes = (char *)PyArray_DATA(pyConeTypes);
+    if(pyConenames && PyArray_DIMS(pyConenames) > 0)
+        paszConenames = (char **)PyArray_DATA(pyConenames);
+    if(pyConebegcol && PyArray_DIMS(pyConebegcol) > 0)
+        paiConebegcol = (int *)PyArray_DATA(pyConebegcol);
+    if(pyConecols && PyArray_DIMS(pyConecols) > 0)
+        paiConecols = (int *)PyArray_DATA(pyConecols);
+    if(pyadConeAlpha && PyArray_DIMS(pyadConeAlpha) > 0)
+        padConeAlpha = (double *)PyArray_DATA(pyadConeAlpha);
     errorcode = LSaddCones(pModel,
                            nCone,
                            pszConeTypes,
@@ -5778,14 +5778,14 @@ PyObject *pyLSaddSETS(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pySETStype && pySETStype->dimensions > 0)
-        pszSETStype = (char *)pySETStype->data;
-    if(pyCARDnum && pyCARDnum->dimensions > 0)
-        paiCARDnum = (int *)pyCARDnum->data;
-    if(pySETSbegcol && pySETSbegcol->dimensions > 0)
-        paiSETSbegcol = (int *)pySETSbegcol->data;
-    if(pySETScols && pySETScols->dimensions > 0)
-        paiSETScols = (int *)pySETScols->data;
+    if(pySETStype && PyArray_DIMS(pySETStype) > 0)
+        pszSETStype = (char *)PyArray_DATA(pySETStype);
+    if(pyCARDnum && PyArray_DIMS(pyCARDnum) > 0)
+        paiCARDnum = (int *)PyArray_DATA(pyCARDnum);
+    if(pySETSbegcol && PyArray_DIMS(pySETSbegcol) > 0)
+        paiSETSbegcol = (int *)PyArray_DATA(pySETSbegcol);
+    if(pySETScols && PyArray_DIMS(pySETScols) > 0)
+        paiSETScols = (int *)PyArray_DATA(pySETScols);
 
     errorcode = LSaddSETS(pModel,
                           nSETS,
@@ -5828,10 +5828,10 @@ PyObject *pyLSaddQCterms(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyQCconndx && pyQCconndx->dimensions > 0) paiQCconndx = (int *)pyQCconndx->data;
-    if(pyQCvarndx1 && pyQCvarndx1->dimensions > 0) paiQCvarndx1 = (int *)pyQCvarndx1->data;
-    if(pyQCvarndx2 && pyQCvarndx2->dimensions > 0) paiQCvarndx2 = (int *)pyQCvarndx2->data;
-    if(pyQCcoef && pyQCcoef->dimensions > 0) padQCcoef = (double *)pyQCcoef->data;
+    if(pyQCconndx && PyArray_DIMS(pyQCconndx) > 0) paiQCconndx = (int *)PyArray_DATA(pyQCconndx);
+    if(pyQCvarndx1 && PyArray_DIMS(pyQCvarndx1) > 0) paiQCvarndx1 = (int *)PyArray_DATA(pyQCvarndx1);
+    if(pyQCvarndx2 && PyArray_DIMS(pyQCvarndx2) > 0) paiQCvarndx2 = (int *)PyArray_DATA(pyQCvarndx2);
+    if(pyQCcoef && PyArray_DIMS(pyQCcoef) > 0) padQCcoef = (double *)PyArray_DATA(pyQCcoef);
 
     errorcode = LSaddQCterms(pModel,
                              nQCnonzeros,
@@ -5868,7 +5868,7 @@ PyObject *pyLSdeleteConstraints(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyCons && pyCons->dimensions > 0) paiCons = (int *)pyCons->data;
+    if(pyCons && PyArray_DIMS(pyCons) > 0) paiCons = (int *)PyArray_DATA(pyCons);
 
     errorcode = LSdeleteConstraints(pModel,
                                     nCons,
@@ -5902,7 +5902,7 @@ PyObject *pyLSdeleteCones(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyCones && pyCones->dimensions > 0) paiCones = (int *)pyCones->data;
+    if(pyCones && PyArray_DIMS(pyCones) > 0) paiCones = (int *)PyArray_DATA(pyCones);
 
     errorcode = LSdeleteCones(pModel,
                               nCones,
@@ -5936,7 +5936,7 @@ PyObject *pyLSdeleteSETS(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pySETS && pySETS->dimensions > 0) paiSETS = (int *)pySETS->data;
+    if(pySETS && PyArray_DIMS(pySETS) > 0) paiSETS = (int *)PyArray_DATA(pySETS);
 
     errorcode = LSdeleteSETS(pModel,
                              nSETS,
@@ -5970,7 +5970,7 @@ PyObject *pyLSdeleteSemiContVars(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pySCVars && pySCVars->dimensions > 0) paiSCVars = (int *)pySCVars->data;
+    if(pySCVars && PyArray_DIMS(pySCVars) > 0) paiSCVars = (int *)PyArray_DATA(pySCVars);
 
     errorcode = LSdeleteSemiContVars(pModel,
                                      nSCVars,
@@ -6004,7 +6004,7 @@ PyObject *pyLSdeleteVariables(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyVars && pyVars->dimensions > 0) paiVars = (int *)pyVars->data;
+    if(pyVars && PyArray_DIMS(pyVars) > 0) paiVars = (int *)PyArray_DATA(pyVars);
 
     errorcode = LSdeleteVariables(pModel,
                                   nVars,
@@ -6038,7 +6038,7 @@ PyObject *pyLSdeleteQCterms(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyCons && pyCons->dimensions > 0) paiCons = (int *)pyCons->data;
+    if(pyCons && PyArray_DIMS(pyCons) > 0) paiCons = (int *)PyArray_DATA(pyCons);
 
     errorcode = LSdeleteQCterms(pModel,
                                 nCons,
@@ -6073,7 +6073,7 @@ PyObject *pyLSdeleteAj(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyRows && pyRows->dimensions > 0) paiRows = (int *)pyRows->data;
+    if(pyRows && PyArray_DIMS(pyRows) > 0) paiRows = (int *)PyArray_DATA(pyRows);
 
     errorcode = LSdeleteAj(pModel,
                            iVar1,
@@ -6110,8 +6110,8 @@ PyObject *pyLSmodifyLowerBounds(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyVars && pyVars->dimensions > 0) paiVars = (int *)pyVars->data;
-    if(pyL && pyL->dimensions > 0) padL = (double *)pyL->data;
+    if(pyVars && PyArray_DIMS(pyVars) > 0) paiVars = (int *)PyArray_DATA(pyVars);
+    if(pyL && PyArray_DIMS(pyL) > 0) padL = (double *)PyArray_DATA(pyL);
 
     errorcode = LSmodifyLowerBounds(pModel,
                                     nVars,
@@ -6148,8 +6148,8 @@ PyObject *pyLSmodifyUpperBounds(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyVars && pyVars->dimensions > 0) paiVars = (int *)pyVars->data;
-    if(pyU && pyU->dimensions > 0) padU = (double *)pyU->data;
+    if(pyVars && PyArray_DIMS(pyVars) > 0) paiVars = (int *)PyArray_DATA(pyVars);
+    if(pyU && PyArray_DIMS(pyU) > 0) padU = (double *)PyArray_DATA(pyU);
 
     errorcode = LSmodifyUpperBounds(pModel,
                                     nVars,
@@ -6186,8 +6186,8 @@ PyObject *pyLSmodifyRHS(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyCons && pyCons->dimensions > 0) paiCons = (int *)pyCons->data;
-    if(pyB && pyB->dimensions > 0) padB = (double *)pyB->data;
+    if(pyCons && PyArray_DIMS(pyCons) > 0) paiCons = (int *)PyArray_DATA(pyCons);
+    if(pyB && PyArray_DIMS(pyB) > 0) padB = (double *)PyArray_DATA(pyB);
 
     errorcode = LSmodifyRHS(pModel,
                             nCons,
@@ -6224,8 +6224,8 @@ PyObject *pyLSmodifyObjective(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyVars && pyVars->dimensions > 0) paiVars = (int *)pyVars->data;
-    if(pyC && pyC->dimensions > 0) padC = (double *)pyC->data;
+    if(pyVars && PyArray_DIMS(pyVars) > 0) paiVars = (int *)PyArray_DATA(pyVars);
+    if(pyC && PyArray_DIMS(pyC) > 0) padC = (double *)PyArray_DATA(pyC);
 
     errorcode = LSmodifyObjective(pModel,
                                   nVars,
@@ -6291,8 +6291,8 @@ PyObject *pyLSmodifyAj(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyRows && pyRows->dimensions > 0) paiRows = (int *)pyRows->data;
-    if(pyAj && pyAj->dimensions > 0) padAj = (double *)pyAj->data;
+    if(pyRows && PyArray_DIMS(pyRows) > 0) paiRows = (int *)PyArray_DATA(pyRows);
+    if(pyAj && PyArray_DIMS(pyAj) > 0) padAj = (double *)PyArray_DATA(pyAj);
 
     errorcode = LSmodifyAj(pModel,
                            iVar1,
@@ -6332,7 +6332,7 @@ PyObject *pyLSmodifyCone(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyConeCols && pyConeCols->dimensions > 0) paiConeCols = (int *)pyConeCols->data;
+    if(pyConeCols && PyArray_DIMS(pyConeCols) > 0) paiConeCols = (int *)PyArray_DATA(pyConeCols);
 
     errorcode = LSmodifyCone(pModel,
                              cConeType,
@@ -6372,7 +6372,7 @@ PyObject *pyLSmodifySET(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pySETcols && pySETcols->dimensions > 0) paiSETcols = (int *)pySETcols->data;
+    if(pySETcols && PyArray_DIMS(pySETcols) > 0) paiSETcols = (int *)PyArray_DATA(pySETcols);
 
     errorcode = LSmodifySET(pModel,
                             cSETtype,
@@ -6411,9 +6411,9 @@ PyObject *pyLSmodifySemiContVars(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pySCVars && pySCVars->dimensions > 0) paiSCVars = (int *)pySCVars->data;
-    if(pyL && pyL->dimensions > 0) padL = (double *)pyL->data;
-    if(pyU && pyU->dimensions > 0) padU = (double *)pyU->data;
+    if(pySCVars && PyArray_DIMS(pySCVars) > 0) paiSCVars = (int *)PyArray_DATA(pySCVars);
+    if(pyL && PyArray_DIMS(pyL) > 0) padL = (double *)PyArray_DATA(pyL);
+    if(pyU && PyArray_DIMS(pyU) > 0) padU = (double *)PyArray_DATA(pyU);
 
     errorcode = LSmodifySemiContVars(pModel,
                                      nSCVars,
@@ -6451,10 +6451,10 @@ PyObject *pyLSmodifyConstraintType(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyCons && pyCons->dimensions > 0)
-        paiCons = (int *)pyCons->data;
-    if(pyConTypes && pyConTypes->dimensions > 0)
-        pszConTypes = (char *)pyConTypes->data;
+    if(pyCons && PyArray_DIMS(pyCons) > 0)
+        paiCons = (int *)PyArray_DATA(pyCons);
+    if(pyConTypes && PyArray_DIMS(pyConTypes) > 0)
+        pszConTypes = (char *)PyArray_DATA(pyConTypes);
 
     errorcode = LSmodifyConstraintType(pModel,
                                        nCons,
@@ -6491,10 +6491,10 @@ PyObject *pyLSmodifyVariableType(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyVars && pyVars->dimensions > 0)
-        paiVars = (int *)pyVars->data;
-    if(pyVarTypes && pyVarTypes->dimensions > 0)
-        pszVarTypes = (char *)pyVarTypes->data;
+    if(pyVars && PyArray_DIMS(pyVars) > 0)
+        paiVars = (int *)PyArray_DATA(pyVars);
+    if(pyVarTypes && PyArray_DIMS(pyVarTypes) > 0)
+        pszVarTypes = (char *)PyArray_DATA(pyVarTypes);
 
     errorcode = LSmodifyVariableType(pModel,
                                      nVars,
@@ -6532,8 +6532,8 @@ PyObject *pyLSaddNLPAj(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyRows && pyRows->dimensions > 0) paiRows = (int *)pyRows->data;
-    if(pyAj && pyAj->dimensions > 0) padAj = (double *)pyAj->data;
+    if(pyRows && PyArray_DIMS(pyRows) > 0) paiRows = (int *)PyArray_DATA(pyRows);
+    if(pyAj && PyArray_DIMS(pyAj) > 0) padAj = (double *)PyArray_DATA(pyAj);
 
     errorcode = LSaddNLPAj(pModel,
                            iVar1,
@@ -6571,8 +6571,8 @@ PyObject *pyLSaddNLPobj(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyCols && pyCols->dimensions > 0) paiCols = (int *)pyCols->data;
-    if(pyColj && pyColj->dimensions > 0) padColj = (double *)pyColj->data;
+    if(pyCols && PyArray_DIMS(pyCols) > 0) paiCols = (int *)PyArray_DATA(pyCols);
+    if(pyColj && PyArray_DIMS(pyColj) > 0) padColj = (double *)PyArray_DATA(pyColj);
 
     errorcode = LSaddNLPobj(pModel,
                             nCols,
@@ -6607,7 +6607,7 @@ PyObject *pyLSdeleteNLPobj(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyCols && pyCols->dimensions > 0) paiCols = (int *)pyCols->data;
+    if(pyCols && PyArray_DIMS(pyCols) > 0) paiCols = (int *)PyArray_DATA(pyCols);
 
     errorcode = LSdeleteNLPobj(pModel,
                                nCols,
@@ -6644,9 +6644,9 @@ PyObject *pyLSgetConstraintRanges(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyDec && pyDec->dimensions > 0)
+    if(pyDec && PyArray_DIMS(pyDec) > 0)
         padDec = (double *)PyArray_GetPtr(pyDec,index);
-    if(pyInc && pyInc->dimensions > 0)
+    if(pyInc && PyArray_DIMS(pyInc) > 0)
         padInc = (double *)PyArray_GetPtr(pyInc,index);
 
     errorcode = LSgetConstraintRanges(pModel,
@@ -6681,9 +6681,9 @@ PyObject *pyLSgetObjectiveRanges(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyDec && pyDec->dimensions > 0)
+    if(pyDec && PyArray_DIMS(pyDec) > 0)
         padDec = (double *)PyArray_GetPtr(pyDec,index);
-    if(pyInc && pyInc->dimensions > 0)
+    if(pyInc && PyArray_DIMS(pyInc) > 0)
         padInc = (double *)PyArray_GetPtr(pyInc,index);
 
     errorcode = LSgetObjectiveRanges(pModel,
@@ -6718,9 +6718,9 @@ PyObject *pyLSgetBoundRanges(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyDec && pyDec->dimensions > 0)
+    if(pyDec && PyArray_DIMS(pyDec) > 0)
         padDec = (double *)PyArray_GetPtr(pyDec,index);
-    if(pyInc && pyInc->dimensions > 0)
+    if(pyInc && PyArray_DIMS(pyInc) > 0)
         padInc = (double *)PyArray_GetPtr(pyInc,index);
 
     errorcode = LSgetBoundRanges(pModel,
@@ -6755,9 +6755,9 @@ PyObject *pyLSgetBestBounds(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyBestL && pyBestL->dimensions > 0)
+    if(pyBestL && PyArray_DIMS(pyBestL) > 0)
         padBestL = (double *)PyArray_GetPtr(pyBestL,index);
-    if(pyBestU && pyBestU->dimensions > 0)
+    if(pyBestU && PyArray_DIMS(pyBestU) > 0)
         padBestU = (double *)PyArray_GetPtr(pyBestU,index);
 
     errorcode = LSgetBestBounds(pModel,
@@ -6889,19 +6889,19 @@ PyObject *pyLSgetIIS(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pySuf_r && pySuf_r->dimensions > 0)
+    if(pySuf_r && PyArray_DIMS(pySuf_r) > 0)
         pnSuf_r = (int *)PyArray_GetPtr(pySuf_r,index);
-    if(pyIIS_r && pyIIS_r->dimensions > 0)
+    if(pyIIS_r && PyArray_DIMS(pyIIS_r) > 0)
         pnIIS_r = (int *)PyArray_GetPtr(pyIIS_r,index);
-    if(pyCons && pyCons->dimensions > 0)
+    if(pyCons && PyArray_DIMS(pyCons) > 0)
         paiCons = (int *)PyArray_GetPtr(pyCons,index);
-    if(pySuf_c && pySuf_c->dimensions > 0)
+    if(pySuf_c && PyArray_DIMS(pySuf_c) > 0)
         pnSuf_c = (int *)PyArray_GetPtr(pySuf_c,index);
-    if(pyIIS_c && pyIIS_c->dimensions > 0)
+    if(pyIIS_c && PyArray_DIMS(pyIIS_c) > 0)
         pnIIS_c = (int *)PyArray_GetPtr(pyIIS_c,index);
-    if(pyVars && pyVars->dimensions > 0)
+    if(pyVars && PyArray_DIMS(pyVars) > 0)
         paiVars = (int *)PyArray_GetPtr(pyVars,index);
-    if(pyBnds && pyBnds->dimensions > 0)
+    if(pyBnds && PyArray_DIMS(pyBnds) > 0)
         panBnds = (int *)PyArray_GetPtr(pyBnds,index);
 
     errorcode = LSgetIIS(pModel,
@@ -6944,11 +6944,11 @@ PyObject *pyLSgetIUS(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pySuf && pySuf->dimensions > 0)
+    if(pySuf && PyArray_DIMS(pySuf) > 0)
         pnSuf = (int *)PyArray_GetPtr(pySuf,index);
-    if(pyIUS && pyIUS->dimensions > 0)
+    if(pyIUS && PyArray_DIMS(pyIUS) > 0)
         pnIUS = (int *)PyArray_GetPtr(pyIUS,index);
-    if(pyVars && pyVars->dimensions > 0)
+    if(pyVars && PyArray_DIMS(pyVars) > 0)
         paiVars = (int *)PyArray_GetPtr(pyVars,index);
 
     errorcode = LSgetIUS(pModel,
@@ -6988,13 +6988,13 @@ PyObject *pyLSgetBlockStructure(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyBlock && pyBlock->dimensions > 0)
+    if(pyBlock && PyArray_DIMS(pyBlock) > 0)
         pnBlock = (int *)PyArray_GetPtr(pyBlock,index);
-    if(pyRblock && pyRblock->dimensions > 0)
+    if(pyRblock && PyArray_DIMS(pyRblock) > 0)
         panRblock = (int *)PyArray_GetPtr(pyRblock,index);
-    if(pyCblock && pyCblock->dimensions > 0)
+    if(pyCblock && PyArray_DIMS(pyCblock) > 0)
         panCblock = (int *)PyArray_GetPtr(pyCblock,index);
-    if(pyType && pyType->dimensions > 0)
+    if(pyType && PyArray_DIMS(pyType) > 0)
         pnType = (int *)PyArray_GetPtr(pyType,index);
 
     errorcode = LSgetBlockStructure(pModel,
@@ -7406,7 +7406,7 @@ PyObject *pyLSgetModelStocDouParameter(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyValue && pyValue->dimensions > 0)
+    if(pyValue && PyArray_DIMS(pyValue) > 0)
         pdValue = (double *)PyArray_GetPtr(pyValue,index);
 
     errorcode = LSgetModelStocDouParameter(pModel,iPar,pdValue);
@@ -7469,7 +7469,7 @@ PyObject *pyLSgetModelStocIntParameter(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyValue && pyValue->dimensions > 0)
+    if(pyValue && PyArray_DIMS(pyValue) > 0)
         piValue = (int *)PyArray_GetPtr(pyValue,index);
 
     errorcode = LSgetModelStocIntParameter(pModel,iPar,piValue);
@@ -7502,7 +7502,7 @@ PyObject *pyLSgetScenarioIndex(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyIndex && pyIndex->dimensions > 0)
+    if(pyIndex && PyArray_DIMS(pyIndex) > 0)
         pnIndex = (int *)PyArray_GetPtr(pyIndex,index);
 
     errorcode = LSgetScenarioIndex(pModel,pszName,pnIndex);
@@ -7535,7 +7535,7 @@ PyObject *pyLSgetStageIndex(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyIndex && pyIndex->dimensions > 0)
+    if(pyIndex && PyArray_DIMS(pyIndex) > 0)
         pnIndex = (int *)PyArray_GetPtr(pyIndex,index);
 
     errorcode = LSgetStageIndex(pModel,pszName,pnIndex);
@@ -7568,7 +7568,7 @@ PyObject *pyLSgetStocParIndex(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyIndex && pyIndex->dimensions > 0)
+    if(pyIndex && PyArray_DIMS(pyIndex) > 0)
         pnIndex = (int *)PyArray_GetPtr(pyIndex,index);
 
     errorcode = LSgetStocParIndex(pModel,pszName,pnIndex);
@@ -7701,7 +7701,7 @@ PyObject *pyLSgetStocInfo(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyResult && pyResult->dimensions > 0)
+    if(pyResult && PyArray_DIMS(pyResult) > 0)
         pvResult = (void *)PyArray_GetPtr(pyResult,index);
 
     errorcode = LSgetStocInfo(pModel,nQuery,nParam,pvResult);
@@ -7736,7 +7736,7 @@ PyObject *pyLSgetStocCCPInfo(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyResult && pyResult->dimensions > 0)
+    if(pyResult && PyArray_DIMS(pyResult) > 0)
         pvResult = (void *)PyArray_GetPtr(pyResult,index);
 
     errorcode = LSgetStocCCPInfo(pModel,nQuery,nScenarioIndex,nCPPIndex,pvResult);
@@ -7767,7 +7767,7 @@ PyObject *pyLSloadSampleSizes(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pySampleSize && pySampleSize->dimensions > 0)
+    if(pySampleSize && PyArray_DIMS(pySampleSize) > 0)
         panSampleSize = (void *)PyArray_GetPtr(pySampleSize,index);
 
     errorcode = LSloadSampleSizes(pModel,panSampleSize);
@@ -7798,7 +7798,7 @@ PyObject *pyLSloadConstraintStages(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyStage && pyStage->dimensions > 0)
+    if(pyStage && PyArray_DIMS(pyStage) > 0)
         panStage = (void *)PyArray_GetPtr(pyStage,index);
 
     errorcode = LSloadConstraintStages(pModel,panStage);
@@ -7829,7 +7829,7 @@ PyObject *pyLSloadVariableStages(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyStage && pyStage->dimensions > 0)
+    if(pyStage && PyArray_DIMS(pyStage) > 0)
         panStage = (void *)PyArray_GetPtr(pyStage,index);
 
     errorcode = LSloadVariableStages(pModel,panStage);
@@ -7863,9 +7863,9 @@ PyObject *pyLSloadStageData(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyRstage && pyRstage->dimensions > 0)
+    if(pyRstage && PyArray_DIMS(pyRstage) > 0)
         panRstage = (int *)PyArray_GetPtr(pyRstage,index);
-    if(pyCstage && pyCstage->dimensions > 0)
+    if(pyCstage && PyArray_DIMS(pyCstage) > 0)
         panCstage = (int *)PyArray_GetPtr(pyCstage,index);
 
     errorcode = LSloadStageData(pModel,numStages,panRstage,panCstage);
@@ -7898,9 +7898,9 @@ PyObject *pyLSloadStocParData(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pySparStage && pySparStage->dimensions > 0)
+    if(pySparStage && PyArray_DIMS(pySparStage) > 0)
         panSparStage = (int *)PyArray_GetPtr(pySparStage,index);
-    if(pySparValue && pySparValue->dimensions > 0)
+    if(pySparValue && PyArray_DIMS(pySparValue) > 0)
         padSparValue = (double *)PyArray_GetPtr(pySparValue,index);
 
     errorcode = LSloadStocParData(pModel,panSparStage,padSparValue);
@@ -7931,7 +7931,7 @@ PyObject *pyLSgetDeteqModel(PyObject *self, PyObject *args)
         return NULL;
     }
 
-    if(pyErrorCode && pyErrorCode->dimensions > 0)
+    if(pyErrorCode && PyArray_DIMS(pyErrorCode) > 0)
         pnErrorCode = (int *)PyArray_GetPtr(pyErrorCode,index);
 
     pModel = PyGetObjPtr(pyModel);
@@ -7967,8 +7967,8 @@ PyObject *pyLSaggregateStages(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyScheme && pyScheme->dimensions > 0)
-        panScheme = (int *)pyScheme->data;
+    if(pyScheme && PyArray_DIMS(pyScheme) > 0)
+        panScheme = (int *)PyArray_DATA(pyScheme);
 
     errorcode = LSaggregateStages(pModel,panScheme,nLength);
 
@@ -8000,9 +8000,9 @@ PyObject *pyLSgetStageAggScheme(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyScheme && pyScheme->dimensions > 0)
+    if(pyScheme && PyArray_DIMS(pyScheme) > 0)
         panScheme = (int *)PyArray_GetPtr(pyScheme,index);
-    if(pyLength && pyLength->dimensions > 0)
+    if(pyLength && PyArray_DIMS(pyLength) > 0)
         pnLength = (int *)PyArray_GetPtr(pyLength,index);
 
     errorcode = LSgetStageAggScheme(pModel,panScheme,pnLength);
@@ -8033,7 +8033,7 @@ PyObject *pyLSsolveSP(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyStatus && pyStatus->dimensions > 0)
+    if(pyStatus && PyArray_DIMS(pyStatus) > 0)
         pnStatus = (int *)PyArray_GetPtr(pyStatus,index);
 
     errorcode = LSsolveSP(pModel,pnStatus);
@@ -8066,7 +8066,7 @@ PyObject *pyLSsolveHS(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyStatus && pyStatus->dimensions > 0)
+    if(pyStatus && PyArray_DIMS(pyStatus) > 0)
         pnStatus = (int *)PyArray_GetPtr(pyStatus,index);
 
     errorcode = LSsolveHS(pModel,nSearchMethod,pnStatus);
@@ -8099,7 +8099,7 @@ PyObject *pyLSgetScenarioObjective(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyObj && pyObj->dimensions > 0)
+    if(pyObj && PyArray_DIMS(pyObj) > 0)
         pObj = (double *)PyArray_GetPtr(pyObj,index);
 
     errorcode = LSgetScenarioObjective(pModel,jScenario,pObj);
@@ -8133,7 +8133,7 @@ PyObject *pyLSgetNodePrimalSolution(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyX && pyX->dimensions > 0)
+    if(pyX && PyArray_DIMS(pyX) > 0)
         padX = (double *)PyArray_GetPtr(pyX,index);
 
     errorcode = LSgetNodePrimalSolution(pModel,jScenario,iStage,padX);
@@ -8167,7 +8167,7 @@ PyObject *pyLSgetNodeDualSolution(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyY && pyY->dimensions > 0)
+    if(pyY && PyArray_DIMS(pyY) > 0)
         padY = (double *)PyArray_GetPtr(pyY,index);
 
     errorcode = LSgetNodeDualSolution(pModel,jScenario,iStage,padY);
@@ -8201,7 +8201,7 @@ PyObject *pyLSgetNodeReducedCost(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyX && pyX->dimensions > 0)
+    if(pyX && PyArray_DIMS(pyX) > 0)
         padX = (double *)PyArray_GetPtr(pyX,index);
 
     errorcode = LSgetNodeReducedCost(pModel,jScenario,iStage,padX);
@@ -8235,7 +8235,7 @@ PyObject *pyLSgetNodeSlacks(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyY && pyY->dimensions > 0)
+    if(pyY && PyArray_DIMS(pyY) > 0)
         padY = (double *)PyArray_GetPtr(pyY,index);
 
     errorcode = LSgetNodeSlacks(pModel,jScenario,iStage,padY);
@@ -8271,9 +8271,9 @@ PyObject *pyLSgetScenarioPrimalSolution(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyX && pyX->dimensions > 0)
+    if(pyX && PyArray_DIMS(pyX) > 0)
         padX = (double *)PyArray_GetPtr(pyX,index);
-    if(pyObj && pyObj->dimensions > 0)
+    if(pyObj && PyArray_DIMS(pyObj) > 0)
         pObj = (double *)PyArray_GetPtr(pyObj,index);
 
     errorcode = LSgetScenarioPrimalSolution(pModel,jScenario,padX,pObj);
@@ -8306,7 +8306,7 @@ PyObject *pyLSgetScenarioReducedCost(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyD && pyD->dimensions > 0)
+    if(pyD && PyArray_DIMS(pyD) > 0)
         padD = (double *)PyArray_GetPtr(pyD,index);
 
     errorcode = LSgetScenarioReducedCost(pModel,jScenario,padD);
@@ -8339,7 +8339,7 @@ PyObject *pyLSgetScenarioDualSolution(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyY && pyY->dimensions > 0)
+    if(pyY && PyArray_DIMS(pyY) > 0)
         padY = (double *)PyArray_GetPtr(pyY,index);
 
     errorcode = LSgetScenarioDualSolution(pModel,jScenario,padY);
@@ -8372,7 +8372,7 @@ PyObject *pyLSgetScenarioSlacks(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyS && pyS->dimensions > 0)
+    if(pyS && PyArray_DIMS(pyS) > 0)
         padS = (double *)PyArray_GetPtr(pyS,index);
 
     errorcode = LSgetScenarioSlacks(pModel,jScenario,padS);
@@ -8406,9 +8406,9 @@ PyObject *pyLSgetNodeListByScenario(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyaiNodes && pyaiNodes->dimensions > 0)
+    if(pyaiNodes && PyArray_DIMS(pyaiNodes) > 0)
         paiNodes = (int *)PyArray_GetPtr(pyaiNodes,index);
-    if(pynNodes && pynNodes->dimensions > 0)
+    if(pynNodes && PyArray_DIMS(pynNodes) > 0)
         pnNodes = (int *)PyArray_GetPtr(pynNodes,index);
 
     errorcode = LSgetNodeListByScenario(pModel,jScenario,paiNodes,pnNodes);
@@ -8441,7 +8441,7 @@ PyObject *pyLSgetProbabilityByScenario(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyProb && pyProb->dimensions > 0)
+    if(pyProb && PyArray_DIMS(pyProb) > 0)
         pdProb = (double *)PyArray_GetPtr(pyProb,index);
 
     errorcode = LSgetProbabilityByScenario(pModel,jScenario,pdProb);
@@ -8474,7 +8474,7 @@ PyObject *pyLSgetProbabilityByNode(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyProb && pyProb->dimensions > 0)
+    if(pyProb && PyArray_DIMS(pyProb) > 0)
         pdProb = (double *)PyArray_GetPtr(pyProb,index);
 
     errorcode = LSgetProbabilityByNode(pModel,iNode,pdProb);
@@ -8507,9 +8507,9 @@ PyObject *pyLSgetStocParData(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyStages && pyStages->dimensions > 0)
+    if(pyStages && PyArray_DIMS(pyStages) > 0)
         paiStages = (int *)PyArray_GetPtr(pyStages,index);
-    if(pyVals && pyVals->dimensions > 0)
+    if(pyVals && PyArray_DIMS(pyVals) > 0)
         padVals = (double *)PyArray_GetPtr(pyVals,index);
 
     errorcode = LSgetStocParData(pModel,paiStages,padVals);
@@ -8554,18 +8554,18 @@ PyObject *pyLSaddDiscreteBlocks(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyProb && pyProb->dimensions > 0)
-        padProb = (double *)pyProb->data;
-    if(pyStart && pyStart->dimensions > 0)
-        pakStart = (int *)pyStart->data;
-    if(pyRows && pyRows->dimensions > 0)
-        paiRows = (int *)pyRows->data;
-    if(pyCols && pyCols->dimensions > 0)
-        paiCols = (int *)pyCols->data;
-    if(pyStvs && pyStvs->dimensions > 0)
-        paiStvs = (int *)pyStvs->data;
-    if(pyVals && pyVals->dimensions > 0)
-        padVals = (double *)pyVals->data;
+    if(pyProb && PyArray_DIMS(pyProb) > 0)
+        padProb = (double *)PyArray_DATA(pyProb);
+    if(pyStart && PyArray_DIMS(pyStart) > 0)
+        pakStart = (int *)PyArray_DATA(pyStart);
+    if(pyRows && PyArray_DIMS(pyRows) > 0)
+        paiRows = (int *)PyArray_DATA(pyRows);
+    if(pyCols && PyArray_DIMS(pyCols) > 0)
+        paiCols = (int *)PyArray_DATA(pyCols);
+    if(pyStvs && PyArray_DIMS(pyStvs) > 0)
+        paiStvs = (int *)PyArray_DATA(pyStvs);
+    if(pyVals && PyArray_DIMS(pyVals) > 0)
+        padVals = (double *)PyArray_DATA(pyVals);
 
     errorcode = LSaddDiscreteBlocks(pModel,
                                     iStage,
@@ -8620,14 +8620,14 @@ PyObject *pyLSaddScenario(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyRows && pyRows->dimensions > 0)
-        paiRows = (int *)pyRows->data;
-    if(pyCols && pyCols->dimensions > 0)
-        paiCols = (int *)pyCols->data;
-    if(pyStvs && pyStvs->dimensions > 0)
-        paiStvs = (int *)pyStvs->data;
-    if(pyVals && pyVals->dimensions > 0)
-        padVals = (double *)pyVals->data;
+    if(pyRows && PyArray_DIMS(pyRows) > 0)
+        paiRows = (int *)PyArray_DATA(pyRows);
+    if(pyCols && PyArray_DIMS(pyCols) > 0)
+        paiCols = (int *)PyArray_DATA(pyCols);
+    if(pyStvs && PyArray_DIMS(pyStvs) > 0)
+        paiStvs = (int *)PyArray_DATA(pyStvs);
+    if(pyVals && PyArray_DIMS(pyVals) > 0)
+        padVals = (double *)PyArray_DATA(pyVals);
 
     errorcode = LSaddScenario(pModel,
                               jScenario,
@@ -8675,10 +8675,10 @@ PyObject *pyLSaddDiscreteIndep(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyProbs && pyProbs->dimensions > 0)
-        padProbs = (double *)pyProbs->data;
-    if(pyVals && pyVals->dimensions > 0)
-        padVals = (double *)pyVals->data;
+    if(pyProbs && PyArray_DIMS(pyProbs) > 0)
+        padProbs = (double *)PyArray_DATA(pyProbs);
+    if(pyVals && PyArray_DIMS(pyVals) > 0)
+        padVals = (double *)PyArray_DATA(pyVals);
 
     errorcode = LSaddDiscreteIndep(pModel,
                                    iRow,
@@ -8723,8 +8723,8 @@ PyObject *pyLSaddParamDistIndep(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyParams && pyParams->dimensions > 0)
-        padParams = (double *)pyParams->data;
+    if(pyParams && PyArray_DIMS(pyParams) > 0)
+        padParams = (double *)PyArray_DATA(pyParams);
 
     errorcode = LSaddParamDistIndep(pModel,
                                    iRow,
@@ -8766,8 +8766,8 @@ PyObject *pyLSaddChanceConstraint(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyCons && pyCons->dimensions > 0)
-        paiCons = (int *)pyCons->data;
+    if(pyCons && PyArray_DIMS(pyCons) > 0)
+        paiCons = (int *)PyArray_DATA(pyCons);
 
     errorcode = LSaddChanceConstraint(pModel,
                                       iSense,
@@ -8833,9 +8833,9 @@ PyObject *pyLSgetStocParOutcomes(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyValue && pyValue->dimensions > 0)
+    if(pyValue && PyArray_DIMS(pyValue) > 0)
         pdValue = (double *)PyArray_GetPtr(pyValue,index);
-    if(pyProbs && pyProbs->dimensions > 0)
+    if(pyProbs && PyArray_DIMS(pyProbs) > 0)
         padProbs = (double *)PyArray_GetPtr(pyProbs,index);
 
     errorcode = LSgetStocParOutcomes(pModel,jScenario,pdValue,padProbs);
@@ -8873,12 +8873,12 @@ PyObject *pyLSloadCorrelationMatrix(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyQCcols1 && pyQCcols1->dimensions > 0)
-        paiQCcols1 = (int *)pyQCcols1->data;
-    if(pyQCcols2 && pyQCcols2->dimensions > 0)
-        paiQCcols2 = (int *)pyQCcols2->data;
-    if(pyQCcoef && pyQCcoef->dimensions > 0)
-        padQCcoef = (double *)pyQCcoef->data;
+    if(pyQCcols1 && PyArray_DIMS(pyQCcols1) > 0)
+        paiQCcols1 = (int *)PyArray_DATA(pyQCcols1);
+    if(pyQCcols2 && PyArray_DIMS(pyQCcols2) > 0)
+        paiQCcols2 = (int *)PyArray_DATA(pyQCcols2);
+    if(pyQCcoef && PyArray_DIMS(pyQCcoef) > 0)
+        padQCcoef = (double *)PyArray_DATA(pyQCcoef);
 
     errorcode = LSloadCorrelationMatrix(pModel,
                                         nDim,
@@ -8924,13 +8924,13 @@ PyObject *pyLSgetCorrelationMatrix(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyQCnnz && pyQCnnz->dimensions > 0)
+    if(pyQCnnz && PyArray_DIMS(pyQCnnz) > 0)
         pnQCnnz = (int *)PyArray_GetPtr(pyQCnnz,index);
-    if(pyQCcols1 && pyQCcols1->dimensions > 0)
+    if(pyQCcols1 && PyArray_DIMS(pyQCcols1) > 0)
         paiQCcols1 = (int *)PyArray_GetPtr(pyQCcols1,index);
-    if(pyQCcols2 && pyQCcols2->dimensions > 0)
+    if(pyQCcols2 && PyArray_DIMS(pyQCcols2) > 0)
         paiQCcols2 = (int *)PyArray_GetPtr(pyQCcols2,index);
-    if(pyQCcoef && pyQCcoef->dimensions > 0)
+    if(pyQCcoef && PyArray_DIMS(pyQCcoef) > 0)
         padQCcoef = (double *)PyArray_GetPtr(pyQCcoef,index);
 
     errorcode = LSgetCorrelationMatrix(pModel,
@@ -8969,7 +8969,7 @@ PyObject *pyLSgetStocParSample(PyObject *self, PyObject *args)
         return NULL;
     }
 
-    if(pyErrorCode && pyErrorCode->dimensions > 0)
+    if(pyErrorCode && PyArray_DIMS(pyErrorCode) > 0)
         pnErrorCode = (int *)PyArray_GetPtr(pyErrorCode,index);
 
     pModel = PyGetObjPtr(pyModel);
@@ -9016,15 +9016,15 @@ PyObject *pyLSgetDiscreteBlocks(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyDistType && pyDistType->dimensions > 0)
+    if(pyDistType && PyArray_DIMS(pyDistType) > 0)
         pnDistType = (int *)PyArray_GetPtr(pyDistType,index);
-    if(pyStage && pyStage->dimensions > 0)
+    if(pyStage && PyArray_DIMS(pyStage) > 0)
         piStage = (int *)PyArray_GetPtr(pyStage,index);
-    if(pyRealzBlock && pyRealzBlock->dimensions > 0)
+    if(pyRealzBlock && PyArray_DIMS(pyRealzBlock) > 0)
         pnRealzBlock = (int *)PyArray_GetPtr(pyRealzBlock,index);
-    if(pyProbs && pyProbs->dimensions > 0)
+    if(pyProbs && PyArray_DIMS(pyProbs) > 0)
         padProbs = (double *)PyArray_GetPtr(pyProbs,index);
-    if(pyModifyRule && pyModifyRule->dimensions > 0)
+    if(pyModifyRule && PyArray_DIMS(pyModifyRule) > 0)
         piModifyRule = (int *)PyArray_GetPtr(pyModifyRule,index);
 
     errorcode = LSgetDiscreteBlocks(pModel,
@@ -9074,15 +9074,15 @@ PyObject *pyLSgetDiscreteBlockOutcomes(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyRealz && pyRealz->dimensions > 0)
+    if(pyRealz && PyArray_DIMS(pyRealz) > 0)
         pnRealz = (int *)PyArray_GetPtr(pyRealz,index);
-    if(pyArows && pyArows->dimensions > 0)
+    if(pyArows && PyArray_DIMS(pyArows) > 0)
         paiArows = (int *)PyArray_GetPtr(pyArows,index);
-    if(pyAcols && pyAcols->dimensions > 0)
+    if(pyAcols && PyArray_DIMS(pyAcols) > 0)
         paiAcols = (int *)PyArray_GetPtr(pyAcols,index);
-    if(pyStvs && pyStvs->dimensions > 0)
+    if(pyStvs && PyArray_DIMS(pyStvs) > 0)
         paiStvs = (int *)PyArray_GetPtr(pyStvs,index);
-    if(pyVals && pyVals->dimensions > 0)
+    if(pyVals && PyArray_DIMS(pyVals) > 0)
         padVals = (double *)PyArray_GetPtr(pyVals,index);
 
     errorcode = LSgetDiscreteBlockOutcomes(pModel,
@@ -9139,23 +9139,23 @@ PyObject *pyLSgetDiscreteIndep(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyDistType && pyDistType->dimensions > 0)
+    if(pyDistType && PyArray_DIMS(pyDistType) > 0)
         pnDistType = (int *)PyArray_GetPtr(pyDistType,index);
-    if(pyStage && pyStage->dimensions > 0)
+    if(pyStage && PyArray_DIMS(pyStage) > 0)
         piStage = (int *)PyArray_GetPtr(pyStage,index);
-    if(pyRow && pyRow->dimensions > 0)
+    if(pyRow && PyArray_DIMS(pyRow) > 0)
         piRow = (int *)PyArray_GetPtr(pyRow,index);
-    if(pyCol && pyCol->dimensions > 0)
+    if(pyCol && PyArray_DIMS(pyCol) > 0)
         pjCol = (int *)PyArray_GetPtr(pyCol,index);
-    if(pyStv && pyStv->dimensions > 0)
+    if(pyStv && PyArray_DIMS(pyStv) > 0)
         piStv = (int *)PyArray_GetPtr(pyStv,index);
-    if(pyRealizations && pyRealizations->dimensions > 0)
+    if(pyRealizations && PyArray_DIMS(pyRealizations) > 0)
         pnRealizations = (int *)PyArray_GetPtr(pyRealizations,index);
-    if(pyProbs && pyProbs->dimensions > 0)
+    if(pyProbs && PyArray_DIMS(pyProbs) > 0)
         padProbs = (double *)PyArray_GetPtr(pyProbs,index);
-    if(pyVals && pyVals->dimensions > 0)
+    if(pyVals && PyArray_DIMS(pyVals) > 0)
         padVals = (double *)PyArray_GetPtr(pyVals,index);
-    if(pyModifyRule && pyModifyRule->dimensions > 0)
+    if(pyModifyRule && PyArray_DIMS(pyModifyRule) > 0)
         piModifyRule = (int *)PyArray_GetPtr(pyModifyRule,index);
 
     errorcode = LSgetDiscreteIndep(pModel,
@@ -9214,21 +9214,21 @@ PyObject *pyLSgetParamDistIndep(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyDistType && pyDistType->dimensions > 0)
+    if(pyDistType && PyArray_DIMS(pyDistType) > 0)
         pnDistType = (int *)PyArray_GetPtr(pyDistType,index);
-    if(pyStage && pyStage->dimensions > 0)
+    if(pyStage && PyArray_DIMS(pyStage) > 0)
         piStage = (int *)PyArray_GetPtr(pyStage,index);
-    if(pyRow && pyRow->dimensions > 0)
+    if(pyRow && PyArray_DIMS(pyRow) > 0)
         piRow = (int *)PyArray_GetPtr(pyRow,index);
-    if(pyCol && pyCol->dimensions > 0)
+    if(pyCol && PyArray_DIMS(pyCol) > 0)
         pjCol = (int *)PyArray_GetPtr(pyCol,index);
-    if(pyStv && pyStv->dimensions > 0)
+    if(pyStv && PyArray_DIMS(pyStv) > 0)
         piStv = (int *)PyArray_GetPtr(pyStv,index);
-    if(pynParams && pynParams->dimensions > 0)
+    if(pynParams && PyArray_DIMS(pynParams) > 0)
         pnParams = (int *)PyArray_GetPtr(pynParams,index);
-    if(pydParams && pydParams->dimensions > 0)
+    if(pydParams && PyArray_DIMS(pydParams) > 0)
         padParams = (double *)PyArray_GetPtr(pydParams,index);
-    if(pyModifyRule && pyModifyRule->dimensions > 0)
+    if(pyModifyRule && PyArray_DIMS(pyModifyRule) > 0)
         piModifyRule = (int *)PyArray_GetPtr(pyModifyRule,index);
 
     errorcode = LSgetParamDistIndep(pModel,
@@ -9288,23 +9288,23 @@ PyObject *pyLSgetScenario(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyParentScen && pyParentScen->dimensions > 0)
+    if(pyParentScen && PyArray_DIMS(pyParentScen) > 0)
         piParentScen = (int *)PyArray_GetPtr(pyParentScen,index);
-    if(pyBranchStage && pyBranchStage->dimensions > 0)
+    if(pyBranchStage && PyArray_DIMS(pyBranchStage) > 0)
         piBranchStage = (int *)PyArray_GetPtr(pyBranchStage,index);
-    if(pyProb && pyProb->dimensions > 0)
+    if(pyProb && PyArray_DIMS(pyProb) > 0)
         pdProb = (double *)PyArray_GetPtr(pyProb,index);
-    if(pyRealz && pyRealz->dimensions > 0)
+    if(pyRealz && PyArray_DIMS(pyRealz) > 0)
         pnRealz = (int *)PyArray_GetPtr(pyRealz,index);
-    if(pyArows && pyArows->dimensions > 0)
+    if(pyArows && PyArray_DIMS(pyArows) > 0)
         paiArows = (int *)PyArray_GetPtr(pyArows,index);
-    if(pyAcols && pyAcols->dimensions > 0)
+    if(pyAcols && PyArray_DIMS(pyAcols) > 0)
         paiAcols = (int *)PyArray_GetPtr(pyAcols,index);
-    if(pyStvs && pyStvs->dimensions > 0)
+    if(pyStvs && PyArray_DIMS(pyStvs) > 0)
         paiStvs = (int *)PyArray_GetPtr(pyStvs,index);
-    if(pyVals && pyVals->dimensions > 0)
+    if(pyVals && PyArray_DIMS(pyVals) > 0)
         padVals = (double *)PyArray_GetPtr(pyVals,index);
-    if(pyModifyRule && pyModifyRule->dimensions > 0)
+    if(pyModifyRule && PyArray_DIMS(pyModifyRule) > 0)
         piModifyRule = (int *)PyArray_GetPtr(pyModifyRule,index);
 
     errorcode = LSgetScenario(pModel,
@@ -9356,15 +9356,15 @@ PyObject *pyLSgetChanceConstraint(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pySense && pySense->dimensions > 0)
+    if(pySense && PyArray_DIMS(pySense) > 0)
         piSense = (int *)PyArray_GetPtr(pySense,index);
-    if(pynCons && pynCons->dimensions > 0)
+    if(pynCons && PyArray_DIMS(pynCons) > 0)
         pnCons = (int *)PyArray_GetPtr(pynCons,index);
-    if(pyiCons && pyiCons->dimensions > 0)
+    if(pyiCons && PyArray_DIMS(pyiCons) > 0)
         paiCons = (int *)PyArray_GetPtr(pyiCons,index);
-    if(pyProb && pyProb->dimensions > 0)
+    if(pyProb && PyArray_DIMS(pyProb) > 0)
         pdProb = (double *)PyArray_GetPtr(pyProb,index);
-    if(pyObjWeight && pyObjWeight->dimensions > 0)
+    if(pyObjWeight && PyArray_DIMS(pyObjWeight) > 0)
         pdObjWeight = (double *)PyArray_GetPtr(pyObjWeight,index);
 
     errorcode = LSgetChanceConstraint(pModel,
@@ -9402,7 +9402,7 @@ PyObject *pyLSgetSampleSizes(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pySampleSize && pySampleSize->dimensions > 0)
+    if(pySampleSize && PyArray_DIMS(pySampleSize) > 0)
         panSampleSize = (int *)PyArray_GetPtr(pySampleSize,index);
 
     errorcode = LSgetSampleSizes(pModel,
@@ -9435,7 +9435,7 @@ PyObject *pyLSgetConstraintStages(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyStage && pyStage->dimensions > 0)
+    if(pyStage && PyArray_DIMS(pyStage) > 0)
         panStage = (int *)PyArray_GetPtr(pyStage,index);
 
     errorcode = LSgetConstraintStages(pModel,
@@ -9468,7 +9468,7 @@ PyObject *pyLSgetVariableStages(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyStage && pyStage->dimensions > 0)
+    if(pyStage && PyArray_DIMS(pyStage) > 0)
         panStage = (int *)PyArray_GetPtr(pyStage,index);
 
     errorcode = LSgetVariableStages(pModel,
@@ -9501,7 +9501,7 @@ PyObject *pyLSgetStocRowIndices(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pySrows && pySrows->dimensions > 0)
+    if(pySrows && PyArray_DIMS(pySrows) > 0)
         paiSrows = (int *)PyArray_GetPtr(pySrows,index);
 
     errorcode = LSgetStocRowIndices(pModel,
@@ -9568,7 +9568,7 @@ PyObject *pyLSgetScenarioModel(PyObject *self, PyObject *args)
         return NULL;
     }
 
-    if(pyErrorCode && pyErrorCode->dimensions > 0)
+    if(pyErrorCode && PyArray_DIMS(pyErrorCode) > 0)
         pnErrorCode = (int *)PyArray_GetPtr(pyErrorCode,index);
 
     pModel = PyGetObjPtr(pyModel);
@@ -9645,7 +9645,7 @@ PyObject *pyLSgetModelStocParameter(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyResult && pyResult->dimensions > 0)
+    if(pyResult && PyArray_DIMS(pyResult) > 0)
         pvResult = (void *)PyArray_GetPtr(pyResult,index);
 
     errorcode = LSgetModelStocParameter(pModel,nQuery,pvResult);
@@ -9678,7 +9678,7 @@ PyObject *pyLSsetModelStocParameter(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyResult && pyResult->dimensions > 0)
+    if(pyResult && PyArray_DIMS(pyResult) > 0)
         pvResult = (void *)PyArray_GetPtr(pyResult,index);
 
     errorcode = LSsetModelStocParameter(pModel,nQuery,pvResult);
@@ -9711,7 +9711,7 @@ PyObject *pyLSsetEnvStocParameter(PyObject *self, PyObject *args)
 
     CHECK_ENV;
 
-    if(pyValue && pyValue->dimensions > 0)
+    if(pyValue && PyArray_DIMS(pyValue) > 0)
         pvValue = (void *)PyArray_GetPtr(pyValue,index);
 
     errorcode = LSsetEnvStocParameter(pEnv,nParameter,pvValue);
@@ -9744,7 +9744,7 @@ PyObject *pyLSgetEnvStocParameter(PyObject *self, PyObject *args)
 
     CHECK_ENV;
 
-    if(pyValue && pyValue->dimensions > 0)
+    if(pyValue && PyArray_DIMS(pyValue) > 0)
         pvValue = (void *)PyArray_GetPtr(pyValue,index);
 
     errorcode = LSgetEnvStocParameter(pEnv,nParameter,pvValue);
@@ -9778,7 +9778,7 @@ PyObject *pyLSsampCreate(PyObject *self, PyObject *args)
         return NULL;
     }
 
-    if(pyErrorCode && pyErrorCode->dimensions > 0)
+    if(pyErrorCode && PyArray_DIMS(pyErrorCode) > 0)
         pnErrorCode = (int *)PyArray_GetPtr(pyErrorCode,index);
 
     pEnv = PyGetObjPtr(pyEnv);
@@ -9866,7 +9866,7 @@ PyObject *pyLSsampGetDistrParam(PyObject *self, PyObject *args)
 
     CHECK_SAMPLE;
 
-    if(pyValue && pyValue->dimensions > 0)
+    if(pyValue && PyArray_DIMS(pyValue) > 0)
         pdValue = (double *)PyArray_GetPtr(pyValue,index);
 
     errorcode = LSsampGetDistrParam(pSample,nIndex,pdValue);
@@ -9901,7 +9901,7 @@ PyObject *pyLSsampEvalDistr(PyObject *self, PyObject *args)
 
     CHECK_SAMPLE;
 
-    if(pyResult && pyResult->dimensions > 0)
+    if(pyResult && PyArray_DIMS(pyResult) > 0)
         pdResult = (double *)PyArray_GetPtr(pyResult,index);
 
     errorcode = LSsampEvalDistr(pSample,nFuncType,dXval,pdResult);
@@ -9936,7 +9936,7 @@ PyObject *pyLSsampEvalDistrLI(PyObject *self, PyObject *args)
 
     CHECK_SAMPLE;
 
-    if(pyResult && pyResult->dimensions > 0)
+    if(pyResult && PyArray_DIMS(pyResult) > 0)
         pdResult = (double *)PyArray_GetPtr(pyResult,index);
 
     errorcode = LSsampEvalDistrLI(pSample,nFuncType,dXval,pdResult);
@@ -9973,10 +9973,10 @@ PyObject *pyLSsampEvalUserDistr(PyObject *self, PyObject *args)
 
     CHECK_SAMPLE;
 
-    if(pyXval && pyXval->dimensions > 0)
-        padXval = (double *)pyXval->data;
+    if(pyXval && PyArray_DIMS(pyXval) > 0)
+        padXval = (double *)PyArray_DATA(pyXval);
 
-    if(pyResult && pyResult->dimensions > 0)
+    if(pyResult && PyArray_DIMS(pyResult) > 0)
         pdResult = (double *)PyArray_GetPtr(pyResult,index);
 
     errorcode = LSsampEvalUserDistr(pSample,nFuncType,padXval,nDim,pdResult);
@@ -10064,9 +10064,9 @@ PyObject *pyLSsampGetPoints(PyObject *self, PyObject *args)
 
     CHECK_SAMPLE;
 
-    if(pySampSize && pySampSize->dimensions > 0)
+    if(pySampSize && PyArray_DIMS(pySampSize) > 0)
         pnSampSize = (int *)PyArray_GetPtr(pySampSize,index);
-    if(pyXval && pyXval->dimensions > 0)
+    if(pyXval && PyArray_DIMS(pyXval) > 0)
         pdXval = (double *)PyArray_GetPtr(pyXval,index);
 
     errorcode = LSsampGetPoints(pSample,pnSampSize,pdXval);
@@ -10098,8 +10098,8 @@ PyObject *pyLSsampLoadPoints(PyObject *self, PyObject *args)
 
     CHECK_SAMPLE;
 
-    if(pyXval && pyXval->dimensions > 0)
-        pdXval = (double *)pyXval->data;
+    if(pyXval && PyArray_DIMS(pyXval) > 0)
+        pdXval = (double *)PyArray_DATA(pyXval);
 
     errorcode = LSsampLoadPoints(pSample,nSampSize,pdXval);
 
@@ -10131,9 +10131,9 @@ PyObject *pyLSsampGetCIPoints(PyObject *self, PyObject *args)
 
     CHECK_SAMPLE;
 
-    if(pySampSize && pySampSize->dimensions > 0)
+    if(pySampSize && PyArray_DIMS(pySampSize) > 0)
         pnSampSize = (int *)PyArray_GetPtr(pySampSize,index);
-    if(pyXval && pyXval->dimensions > 0)
+    if(pyXval && PyArray_DIMS(pyXval) > 0)
         pdXval = (double *)PyArray_GetPtr(pyXval,index);
 
     errorcode = LSsampGetCIPoints(pSample,pnSampSize,pdXval);
@@ -10167,10 +10167,10 @@ PyObject *pyLSsampLoadDiscretePdfTable(PyObject *self, PyObject *args)
 
     CHECK_SAMPLE;
 
-    if(pyProb && pyProb->dimensions > 0)
-        padProb = (double *)pyProb->data;
-    if(pyVals && pyVals->dimensions > 0)
-        padVals = (double *)pyVals->data;
+    if(pyProb && PyArray_DIMS(pyProb) > 0)
+        padProb = (double *)PyArray_DATA(pyProb);
+    if(pyVals && PyArray_DIMS(pyVals) > 0)
+        padVals = (double *)PyArray_DATA(pyVals);
 
     errorcode = LSsampLoadDiscretePdfTable(pSample,nLen,padProb,padVals);
 
@@ -10204,11 +10204,11 @@ PyObject *pyLSsampGetDiscretePdfTable(PyObject *self, PyObject *args)
 
     CHECK_SAMPLE;
 
-    if(pyLen && pyLen->dimensions > 0)
+    if(pyLen && PyArray_DIMS(pyLen) > 0)
         pnLen = (int *)PyArray_GetPtr(pyLen,index);
-    if(pyProb && pyProb->dimensions > 0)
+    if(pyProb && PyArray_DIMS(pyProb) > 0)
         padProb = (double *)PyArray_GetPtr(pyProb,index);
-    if(pyVals && pyVals->dimensions > 0)
+    if(pyVals && PyArray_DIMS(pyVals) > 0)
         padVals = (double *)PyArray_GetPtr(pyVals,index);
 
     errorcode = LSsampGetDiscretePdfTable(pSample,pnLen,padProb,padVals);
@@ -10241,7 +10241,7 @@ PyObject *pyLSsampGetInfo(PyObject *self, PyObject *args)
 
     CHECK_SAMPLE;
 
-    if(pyResult && pyResult->dimensions > 0)
+    if(pyResult && PyArray_DIMS(pyResult) > 0)
         pvResult = (void *)PyArray_GetPtr(pyResult,index);
 
     errorcode = LSsampGetInfo(pSample,nQuery,pvResult);
@@ -10500,7 +10500,7 @@ PyObject *pyLSgetDistrRV(PyObject *self, PyObject *args)
 
     CHECK_RG;
 
-    if(pyResult && pyResult->dimensions > 0)
+    if(pyResult && PyArray_DIMS(pyResult) > 0)
         pvResult = (void *)PyArray_GetPtr(pyResult,index);
 
     errorcode = LSgetDistrRV(pRG,pvResult);
@@ -10551,7 +10551,7 @@ PyObject *pyLSgetRGNumThreads(PyObject *self, PyObject *args)
 
     CHECK_RG;
 
-    if(pyThreads && pyThreads->dimensions > 0)
+    if(pyThreads && PyArray_DIMS(pyThreads) > 0)
         pnThreads = (int *)PyArray_GetPtr(pyThreads,index);
 
     errorcode = LSgetRGNumThreads(pRG,pnThreads);
@@ -10627,24 +10627,24 @@ PyObject *pyLSgetHistogram(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyVals && pyVals->dimensions > 0)
-        padVals = (double *)pyVals->data;
-    if(pyWeights && pyWeights->dimensions > 0)
-        padWeights = (double *)pyWeights->data;
+    if(pyVals && PyArray_DIMS(pyVals) > 0)
+        padVals = (double *)PyArray_DATA(pyVals);
+    if(pyWeights && PyArray_DIMS(pyWeights) > 0)
+        padWeights = (double *)PyArray_DATA(pyWeights);
 
-    if(pyBins && pyBins->dimensions > 0)
+    if(pyBins && PyArray_DIMS(pyBins) > 0)
         pnBins = (int *)PyArray_GetPtr(pyBins,index);
-    if(pyBinCounts && pyBinCounts->dimensions > 0)
+    if(pyBinCounts && PyArray_DIMS(pyBinCounts) > 0)
         panBinCounts = (int *)PyArray_GetPtr(pyBinCounts,index);
-    if(pyBinProbs && pyBinProbs->dimensions > 0)
+    if(pyBinProbs && PyArray_DIMS(pyBinProbs) > 0)
         padBinProbs = (double *)PyArray_GetPtr(pyBinProbs,index);
-    if(pyBinLow && pyBinLow->dimensions > 0)
+    if(pyBinLow && PyArray_DIMS(pyBinLow) > 0)
         padBinLow = (double *)PyArray_GetPtr(pyBinLow,index);
-    if(pyBinHigh && pyBinHigh->dimensions > 0)
+    if(pyBinHigh && PyArray_DIMS(pyBinHigh) > 0)
         padBinHigh = (double *)PyArray_GetPtr(pyBinHigh,index);
-    if(pyBinLeftEdge && pyBinLeftEdge->dimensions > 0)
+    if(pyBinLeftEdge && PyArray_DIMS(pyBinLeftEdge) > 0)
         padBinLeftEdge = (double *)PyArray_GetPtr(pyBinLeftEdge,index);
-    if(pyBinRightEdge && pyBinRightEdge->dimensions > 0)
+    if(pyBinRightEdge && PyArray_DIMS(pyBinRightEdge) > 0)
         padBinRightEdge = (double *)PyArray_GetPtr(pyBinRightEdge,index);
 
     errorcode = LSgetHistogram(pModel,
@@ -10691,7 +10691,7 @@ PyObject *pyLSsolveMipBnp(PyObject *self, PyObject *args)
 
     CHECK_MODEL;
 
-    if(pyStatus && pyStatus->dimensions > 0)
+    if(pyStatus && PyArray_DIMS(pyStatus) > 0)
         pnStatus = (int *)PyArray_GetPtr(pyStatus,index);
 
     errorcode = LSsolveMipBnp(pModel,nBlock,pszFname,pnStatus);
@@ -11438,10 +11438,10 @@ PyObject *pyLSgetTunerSpace(PyObject *self, PyObject *args) {
     CHECK_ENV;
 
     // Get C pointers
-    if (pyArr[2] && pyArr[2]->dimensions > 0)
+    if (pyArr[2] && PyArray_DIMS(pyArr[2]) > 0)
         ivecptr[2] = (int*)PyArray_GetPtr(pyArr[2], index); //*panParamId
 
-    if (pyArr[3] && pyArr[3]->dimensions > 0)
+    if (pyArr[3] && PyArray_DIMS(pyArr[3]) > 0)
         ivecptr[3] = (int*)PyArray_GetPtr(pyArr[3], index); //*numParam
 
     errorcode = LSgetTunerSpace(pEnv
@@ -12170,8 +12170,8 @@ PyObject *pyLSaddEmptySpacesAcolumns(PyObject *self, PyObject *args) {
 
 
     // Get C pointers
-    if (pyArr[2] && pyArr[2]->dimensions > 0)
-        ivecptr[2] = (int*)pyArr[2]->data;  //*paiColnnz
+    if (pyArr[2] && PyArray_DIMS(pyArr[2]) > 0)
+        ivecptr[2] = (int*)PyArray_DATA(pyArr[2]);  //*paiColnnz
 
     errorcode = LSaddEmptySpacesAcolumns(pModel
         , ivecptr[2]); //*paiColnnz
@@ -12211,8 +12211,8 @@ PyObject *pyLSaddEmptySpacesNLPAcolumns(PyObject *self, PyObject *args) {
 
 
     // Get C pointers
-    if (pyArr[2] && pyArr[2]->dimensions > 0)
-        ivecptr[2] = (int*)pyArr[2]->data;  //*paiColnnz
+    if (pyArr[2] && PyArray_DIMS(pyArr[2]) > 0)
+        ivecptr[2] = (int*)PyArray_DATA(pyArr[2]);  //*paiColnnz
 
     errorcode = LSaddEmptySpacesNLPAcolumns(pModel
         , ivecptr[2]); //*paiColnnz
@@ -12255,8 +12255,8 @@ PyObject *pyLSaddObjPool(PyObject *self, PyObject *args) {
 
 
     // Get C pointers
-    if (pyArr[2] && pyArr[2]->dimensions > 0)
-        dvecptr[2] = (double*)pyArr[2]->data;  //*padC
+    if (pyArr[2] && PyArray_DIMS(pyArr[2]) > 0)
+        dvecptr[2] = (double*)PyArray_DATA(pyArr[2]);  //*padC
 
     errorcode = LSaddObjPool(pModel
         , dvecptr[2] //*padC
@@ -12304,17 +12304,17 @@ PyObject *pyLSapplyLtf(PyObject *self, PyObject *args) {
 
 
     // Get C pointers
-    if (pyArr[2] && pyArr[2]->dimensions > 0)
-        ivecptr[2] = (int*)pyArr[2]->data;  //*panNewColIdx
+    if (pyArr[2] && PyArray_DIMS(pyArr[2]) > 0)
+        ivecptr[2] = (int*)PyArray_DATA(pyArr[2]);  //*panNewColIdx
 
-    if (pyArr[3] && pyArr[3]->dimensions > 0)
-        ivecptr[3] = (int*)pyArr[3]->data;  //*panNewRowIdx
+    if (pyArr[3] && PyArray_DIMS(pyArr[3]) > 0)
+        ivecptr[3] = (int*)PyArray_DATA(pyArr[3]);  //*panNewRowIdx
 
-    if (pyArr[4] && pyArr[4]->dimensions > 0)
-        ivecptr[4] = (int*)pyArr[4]->data;  //*panNewColPos
+    if (pyArr[4] && PyArray_DIMS(pyArr[4]) > 0)
+        ivecptr[4] = (int*)PyArray_DATA(pyArr[4]);  //*panNewColPos
 
-    if (pyArr[5] && pyArr[5]->dimensions > 0)
-        ivecptr[5] = (int*)pyArr[5]->data;  //*panNewRowPos
+    if (pyArr[5] && PyArray_DIMS(pyArr[5]) > 0)
+        ivecptr[5] = (int*)PyArray_DATA(pyArr[5]);  //*panNewRowPos
 
     errorcode = LSapplyLtf(pModel
         , ivecptr[2] //*panNewColIdx
@@ -12488,7 +12488,7 @@ PyObject *pyLScalcConGrad(PyObject *self, PyObject *args) {
     D_VECDATA(3);
     D_VECDATA(5);
 
-    if (pyArr[6] && pyArr[6]->dimensions > 0)
+    if (pyArr[6] && PyArray_DIMS(pyArr[6]) > 0)
         dvecptr[6] = (double*)PyArray_GetPtr(pyArr[6], index); //*padParGrad
 
     errorcode = LScalcConGrad(pModel
@@ -12581,10 +12581,10 @@ PyObject *pyLScalcObjGrad(PyObject *self, PyObject *args) {
     // Get C pointers
     D_VECDATA(2);
 
-    if (pyArr[4] && pyArr[4]->dimensions > 0)
-        ivecptr[4] = (int*)pyArr[4]->data;  //*paiParList
+    if (pyArr[4] && PyArray_DIMS(pyArr[4]) > 0)
+        ivecptr[4] = (int*)PyArray_DATA(pyArr[4]);  //*paiParList
 
-    if (pyArr[5] && pyArr[5]->dimensions > 0)
+    if (pyArr[5] && PyArray_DIMS(pyArr[5]) > 0)
         dvecptr[5] = (double*)PyArray_GetPtr(pyArr[5], index); //*padParGrad
 
     errorcode = LScalcObjGrad(pModel
@@ -12676,13 +12676,13 @@ PyObject *pyLSdeduceStages(PyObject *self, PyObject *args) {
 
 
     // Get C pointers
-    if (pyArr[3] && pyArr[3]->dimensions > 0)
+    if (pyArr[3] && PyArray_DIMS(pyArr[3]) > 0)
         ivecptr[3] = (int*)PyArray_GetPtr(pyArr[3], index); //*panRowStagse
 
-    if (pyArr[4] && pyArr[4]->dimensions > 0)
+    if (pyArr[4] && PyArray_DIMS(pyArr[4]) > 0)
         ivecptr[4] = (int*)PyArray_GetPtr(pyArr[4], index); //*panColStages
 
-    if (pyArr[5] && pyArr[5]->dimensions > 0)
+    if (pyArr[5] && PyArray_DIMS(pyArr[5]) > 0)
         ivecptr[5] = (int*)PyArray_GetPtr(pyArr[5], index); //*panSparStage
 
     errorcode = LSdeduceStages(pModel
@@ -12813,19 +12813,19 @@ PyObject *pyLSdisplayBlockStructure(PyObject *self, PyObject *args) {
 
 
     // Get C pointers
-    if (pyArr[2] && pyArr[2]->dimensions > 0)
+    if (pyArr[2] && PyArray_DIMS(pyArr[2]) > 0)
         ivecptr[2] = (int*)PyArray_GetPtr(pyArr[2], index); //*pnBlock
 
-    if (pyArr[3] && pyArr[3]->dimensions > 0)
+    if (pyArr[3] && PyArray_DIMS(pyArr[3]) > 0)
         ivecptr[3] = (int*)PyArray_GetPtr(pyArr[3], index); //*panNewColIdx
 
-    if (pyArr[4] && pyArr[4]->dimensions > 0)
+    if (pyArr[4] && PyArray_DIMS(pyArr[4]) > 0)
         ivecptr[4] = (int*)PyArray_GetPtr(pyArr[4], index); //*panNewRowIdx
 
-    if (pyArr[5] && pyArr[5]->dimensions > 0)
+    if (pyArr[5] && PyArray_DIMS(pyArr[5]) > 0)
         ivecptr[5] = (int*)PyArray_GetPtr(pyArr[5], index); //*panNewColPos
 
-    if (pyArr[6] && pyArr[6]->dimensions > 0)
+    if (pyArr[6] && PyArray_DIMS(pyArr[6]) > 0)
         ivecptr[6] = (int*)PyArray_GetPtr(pyArr[6], index); //*panNewRowPos
 
     errorcode = LSdisplayBlockStructure(pModel
@@ -12883,7 +12883,7 @@ PyObject *pyLSdoBTRAN(PyObject *self, PyObject *args) {
 
     I_GET_VECPTR(5);
     I_GET_VECPTR(6);
-    if (pyArr[7] && pyArr[7]->dimensions > 0)
+    if (pyArr[7] && PyArray_DIMS(pyArr[7]) > 0)
         dvecptr[7] = (double*)PyArray_GetPtr(pyArr[7], index); //*padX
 
     errorcode = LSdoBTRAN(pModel
@@ -12940,7 +12940,7 @@ PyObject *pyLSdoFTRAN(PyObject *self, PyObject *args) {
 
     I_GET_VECPTR(5);
     I_GET_VECPTR(6);
-    if (pyArr[7] && pyArr[7]->dimensions > 0)
+    if (pyArr[7] && PyArray_DIMS(pyArr[7]) > 0)
         dvecptr[7] = (double*)PyArray_GetPtr(pyArr[7], index); //*padX
 
     errorcode = LSdoFTRAN(pModel
@@ -12989,16 +12989,16 @@ PyObject *pyLSfindLtf(PyObject *self, PyObject *args) {
 
 
     // Get C pointers
-    if (pyArr[2] && pyArr[2]->dimensions > 0)
+    if (pyArr[2] && PyArray_DIMS(pyArr[2]) > 0)
         ivecptr[2] = (int*)PyArray_GetPtr(pyArr[2], index); //*panNewColIdx
 
-    if (pyArr[3] && pyArr[3]->dimensions > 0)
+    if (pyArr[3] && PyArray_DIMS(pyArr[3]) > 0)
         ivecptr[3] = (int*)PyArray_GetPtr(pyArr[3], index); //*panNewRowIdx
 
-    if (pyArr[4] && pyArr[4]->dimensions > 0)
+    if (pyArr[4] && PyArray_DIMS(pyArr[4]) > 0)
         ivecptr[4] = (int*)PyArray_GetPtr(pyArr[4], index); //*panNewColPos
 
-    if (pyArr[5] && pyArr[5]->dimensions > 0)
+    if (pyArr[5] && PyArray_DIMS(pyArr[5]) > 0)
         ivecptr[5] = (int*)PyArray_GetPtr(pyArr[5], index); //*panNewRowPos
 
     errorcode = LSfindLtf(pModel
@@ -13040,7 +13040,7 @@ PyObject *pyLSfindSymmetry(PyObject *self, PyObject *args) {
     LSgetInfo(pModel, LS_IINFO_NUM_VARS, &n);
     LSgetInfo(pModel, LS_IINFO_NUM_CONS, &m);
 
-    if (pyArr[2] && pyArr[2]->dimensions > 0)
+    if (pyArr[2] && PyArray_DIMS(pyArr[2]) > 0)
         ivecptr[2] = (int *)PyArray_GetPtr(pyArr[2], index);
 
     // Get C pointers
@@ -13333,22 +13333,22 @@ PyObject *pyLSgetALLDIFFData(PyObject *self, PyObject *args) {
 
 
     // Get C pointers
-    if (pyArr[2] && pyArr[2]->dimensions > 0)
+    if (pyArr[2] && PyArray_DIMS(pyArr[2]) > 0)
         ivecptr[2] = (int*)PyArray_GetPtr(pyArr[2], index); //*pinALLDIFF
 
-    if (pyArr[3] && pyArr[3]->dimensions > 0)
+    if (pyArr[3] && PyArray_DIMS(pyArr[3]) > 0)
         ivecptr[3] = (int*)PyArray_GetPtr(pyArr[3], index); //*paiAlldiffDim
 
-    if (pyArr[4] && pyArr[4]->dimensions > 0)
+    if (pyArr[4] && PyArray_DIMS(pyArr[4]) > 0)
         ivecptr[4] = (int*)PyArray_GetPtr(pyArr[4], index); //*paiAlldiffL
 
-    if (pyArr[5] && pyArr[5]->dimensions > 0)
+    if (pyArr[5] && PyArray_DIMS(pyArr[5]) > 0)
         ivecptr[5] = (int*)PyArray_GetPtr(pyArr[5], index); //*paiAlldiffU
 
-    if (pyArr[6] && pyArr[6]->dimensions > 0)
+    if (pyArr[6] && PyArray_DIMS(pyArr[6]) > 0)
         ivecptr[6] = (int*)PyArray_GetPtr(pyArr[6], index); //*paiAlldiffBeg
 
-    if (pyArr[7] && pyArr[7]->dimensions > 0)
+    if (pyArr[7] && PyArray_DIMS(pyArr[7]) > 0)
         ivecptr[7] = (int*)PyArray_GetPtr(pyArr[7], index); //*paiAlldiffVar
 
     errorcode = LSgetALLDIFFData(pModel
@@ -13399,16 +13399,16 @@ PyObject *pyLSgetALLDIFFDatai(PyObject *self, PyObject *args) {
 
 
     // Get C pointers
-    if (pyArr[3] && pyArr[3]->dimensions > 0)
+    if (pyArr[3] && PyArray_DIMS(pyArr[3]) > 0)
         ivecptr[3] = (int*)PyArray_GetPtr(pyArr[3], index); //*piAlldiffDim
 
-    if (pyArr[4] && pyArr[4]->dimensions > 0)
+    if (pyArr[4] && PyArray_DIMS(pyArr[4]) > 0)
         ivecptr[4] = (int*)PyArray_GetPtr(pyArr[4], index); //*piAlldiffL
 
-    if (pyArr[5] && pyArr[5]->dimensions > 0)
+    if (pyArr[5] && PyArray_DIMS(pyArr[5]) > 0)
         ivecptr[5] = (int*)PyArray_GetPtr(pyArr[5], index); //*piAlldiffU
 
-    if (pyArr[6] && pyArr[6]->dimensions > 0)
+    if (pyArr[6] && PyArray_DIMS(pyArr[6]) > 0)
         ivecptr[6] = (int*)PyArray_GetPtr(pyArr[6], index); //*paiAlldiffVar
 
     errorcode = LSgetALLDIFFDatai(pModel
@@ -13521,19 +13521,19 @@ PyObject *pyLSgetDualMIPsolution(PyObject *self, PyObject *args) {
 
 
     // Get C pointers
-    if (pyArr[2] && pyArr[2]->dimensions > 0)
+    if (pyArr[2] && PyArray_DIMS(pyArr[2]) > 0)
         dvecptr[2] = (double*)PyArray_GetPtr(pyArr[2], index); //*padPrimal
 
-    if (pyArr[3] && pyArr[3]->dimensions > 0)
+    if (pyArr[3] && PyArray_DIMS(pyArr[3]) > 0)
         dvecptr[3] = (double*)PyArray_GetPtr(pyArr[3], index); //*padDual
 
-    if (pyArr[4] && pyArr[4]->dimensions > 0)
+    if (pyArr[4] && PyArray_DIMS(pyArr[4]) > 0)
         dvecptr[4] = (double*)PyArray_GetPtr(pyArr[4], index); //*padRedcosts
 
-    if (pyArr[5] && pyArr[5]->dimensions > 0)
+    if (pyArr[5] && PyArray_DIMS(pyArr[5]) > 0)
         ivecptr[5] = (int*)PyArray_GetPtr(pyArr[5], index); //*panCstatus
 
-    if (pyArr[6] && pyArr[6]->dimensions > 0)
+    if (pyArr[6] && PyArray_DIMS(pyArr[6]) > 0)
         ivecptr[6] = (int*)PyArray_GetPtr(pyArr[6], index); //*panRstatus
 
     errorcode = LSgetDualMIPsolution(pModel
@@ -13627,22 +13627,22 @@ PyObject *pyLSgetHess(PyObject *self, PyObject *args) {
 
 
     // Get C pointers
-    if (pyArr[2] && pyArr[2]->dimensions > 0)
+    if (pyArr[2] && PyArray_DIMS(pyArr[2]) > 0)
         ivecptr[2] = (int*)PyArray_GetPtr(pyArr[2], index); //*pnHnonzeros
 
-    if (pyArr[3] && pyArr[3]->dimensions > 0)
+    if (pyArr[3] && PyArray_DIMS(pyArr[3]) > 0)
         ivecptr[3] = (int*)PyArray_GetPtr(pyArr[3], index); //*paiHrows
 
-    if (pyArr[4] && pyArr[4]->dimensions > 0)
+    if (pyArr[4] && PyArray_DIMS(pyArr[4]) > 0)
         ivecptr[4] = (int*)PyArray_GetPtr(pyArr[4], index); //*paiHcol1
 
-    if (pyArr[5] && pyArr[5]->dimensions > 0)
+    if (pyArr[5] && PyArray_DIMS(pyArr[5]) > 0)
         ivecptr[5] = (int*)PyArray_GetPtr(pyArr[5], index); //*paiHcol2
 
-    if (pyArr[6] && pyArr[6]->dimensions > 0)
+    if (pyArr[6] && PyArray_DIMS(pyArr[6]) > 0)
         dvecptr[6] = (double*)PyArray_GetPtr(pyArr[6], index); //*padHcoef
 
-    if (pyArr[7] && pyArr[7]->dimensions > 0)
+    if (pyArr[7] && PyArray_DIMS(pyArr[7]) > 0)
         dvecptr[7] = (double*)PyArray_GetPtr(pyArr[7], index); //*padX
 
     errorcode = LSgetHess(pModel
@@ -13691,13 +13691,13 @@ PyObject *pyLSgetIISInts(PyObject *self, PyObject *args) {
 
 
     // Get C pointers
-    if (pyArr[2] && pyArr[2]->dimensions > 0)
+    if (pyArr[2] && PyArray_DIMS(pyArr[2]) > 0)
         ivecptr[2] = (int*)PyArray_GetPtr(pyArr[2], index); //*pnSuf_xnt
 
-    if (pyArr[3] && pyArr[3]->dimensions > 0)
+    if (pyArr[3] && PyArray_DIMS(pyArr[3]) > 0)
         ivecptr[3] = (int*)PyArray_GetPtr(pyArr[3], index); //*pnIIS_xnt
 
-    if (pyArr[4] && pyArr[4]->dimensions > 0)
+    if (pyArr[4] && PyArray_DIMS(pyArr[4]) > 0)
         ivecptr[4] = (int*)PyArray_GetPtr(pyArr[4], index); //*paiVars
 
     errorcode = LSgetIISInts(pModel
@@ -13743,13 +13743,13 @@ PyObject *pyLSgetIISSETs(PyObject *self, PyObject *args) {
 
 
     // Get C pointers
-    if (pyArr[2] && pyArr[2]->dimensions > 0)
+    if (pyArr[2] && PyArray_DIMS(pyArr[2]) > 0)
         ivecptr[2] = (int*)PyArray_GetPtr(pyArr[2], index); //*pnSuf_set
 
-    if (pyArr[3] && pyArr[3]->dimensions > 0)
+    if (pyArr[3] && PyArray_DIMS(pyArr[3]) > 0)
         ivecptr[3] = (int*)PyArray_GetPtr(pyArr[3], index); //*pnIIS_set
 
-    if (pyArr[4] && pyArr[4]->dimensions > 0)
+    if (pyArr[4] && PyArray_DIMS(pyArr[4]) > 0)
         ivecptr[4] = (int*)PyArray_GetPtr(pyArr[4], index); //*paiSets
 
     errorcode = LSgetIISSETs(pModel
@@ -13798,22 +13798,22 @@ PyObject *pyLSgetJac(PyObject *self, PyObject *args) {
 
 
     // Get C pointers
-    if (pyArr[2] && pyArr[2]->dimensions > 0)
+    if (pyArr[2] && PyArray_DIMS(pyArr[2]) > 0)
         ivecptr[2] = (int*)PyArray_GetPtr(pyArr[2], index); //*pnJnonzeros
 
-    if (pyArr[3] && pyArr[3]->dimensions > 0)
+    if (pyArr[3] && PyArray_DIMS(pyArr[3]) > 0)
         ivecptr[3] = (int*)PyArray_GetPtr(pyArr[3], index); //*pnJobjnnz
 
-    if (pyArr[4] && pyArr[4]->dimensions > 0)
+    if (pyArr[4] && PyArray_DIMS(pyArr[4]) > 0)
         ivecptr[4] = (int*)PyArray_GetPtr(pyArr[4], index); //*paiJrows
 
-    if (pyArr[5] && pyArr[5]->dimensions > 0)
+    if (pyArr[5] && PyArray_DIMS(pyArr[5]) > 0)
         ivecptr[5] = (int*)PyArray_GetPtr(pyArr[5], index); //*paiJcols
 
-    if (pyArr[6] && pyArr[6]->dimensions > 0)
+    if (pyArr[6] && PyArray_DIMS(pyArr[6]) > 0)
         dvecptr[6] = (double*)PyArray_GetPtr(pyArr[6], index); //*padJcoef
 
-    if (pyArr[7] && pyArr[7]->dimensions > 0)
+    if (pyArr[7] && PyArray_DIMS(pyArr[7]) > 0)
         dvecptr[7] = (double*)PyArray_GetPtr(pyArr[7], index); //*padX
 
     errorcode = LSgetJac(pModel
@@ -13916,7 +13916,7 @@ PyObject *pyLSgetLicenseInfo(PyObject *self, PyObject *args) {
     for (k = 2; k <= 12; k++) {
         I_GET_VECPTR(k);
     }
-    if (pyArr[13] && pyArr[13]->dimensions > 0)
+    if (pyArr[13] && PyArray_DIMS(pyArr[13]) > 0)
         svecptr[13] = (char*)PyArray_GetPtr(pyArr[13], index); //*pachText
 
     errorcode = LSgetLicenseInfo(pModel
@@ -14000,7 +14000,7 @@ PyObject *pyLSgetMIPCallbackInfo(PyObject *self, PyObject *args) {
         CHECK_MODEL;
     }
 
-    if (pyResult && pyResult->dimensions > 0)
+    if (pyResult && PyArray_DIMS(pyResult) > 0)
         pvResult = (void *)PyArray_GetPtr(pyResult, index);
 
     errorcode = LSgetMIPCallbackInfo(pModel, nQuery, pvResult);
@@ -14123,7 +14123,7 @@ PyObject *pyLSgetNnzData(PyObject *self, PyObject *args) {
 
 
     // Get C pointers
-    if (pyArr[3] && pyArr[3]->dimensions > 0)
+    if (pyArr[3] && PyArray_DIMS(pyArr[3]) > 0)
         ivecptr[3] = (int*)PyArray_GetPtr(pyArr[3], index); //*panOutput
 
     errorcode = LSgetNnzData(pModel
@@ -14555,20 +14555,20 @@ PyObject *pyLSloadALLDIFFData(PyObject *self, PyObject *args) {
 
 
     // Get C pointers
-    if (pyArr[3] && pyArr[3]->dimensions > 0)
-        ivecptr[3] = (int*)pyArr[3]->data;  //*paiAlldiffDim
+    if (pyArr[3] && PyArray_DIMS(pyArr[3]) > 0)
+        ivecptr[3] = (int*)PyArray_DATA(pyArr[3]);  //*paiAlldiffDim
 
-    if (pyArr[4] && pyArr[4]->dimensions > 0)
-        ivecptr[4] = (int*)pyArr[4]->data;  //*paiAlldiffL
+    if (pyArr[4] && PyArray_DIMS(pyArr[4]) > 0)
+        ivecptr[4] = (int*)PyArray_DATA(pyArr[4]);  //*paiAlldiffL
 
-    if (pyArr[5] && pyArr[5]->dimensions > 0)
-        ivecptr[5] = (int*)pyArr[5]->data;  //*paiAlldiffU
+    if (pyArr[5] && PyArray_DIMS(pyArr[5]) > 0)
+        ivecptr[5] = (int*)PyArray_DATA(pyArr[5]);  //*paiAlldiffU
 
-    if (pyArr[6] && pyArr[6]->dimensions > 0)
-        ivecptr[6] = (int*)pyArr[6]->data;  //*paiAlldiffBeg
+    if (pyArr[6] && PyArray_DIMS(pyArr[6]) > 0)
+        ivecptr[6] = (int*)PyArray_DATA(pyArr[6]);  //*paiAlldiffBeg
 
-    if (pyArr[7] && pyArr[7]->dimensions > 0)
-        ivecptr[7] = (int*)pyArr[7]->data;  //*paiAlldiffVar
+    if (pyArr[7] && PyArray_DIMS(pyArr[7]) > 0)
+        ivecptr[7] = (int*)PyArray_DATA(pyArr[7]);  //*paiAlldiffVar
 
     errorcode = LSloadALLDIFFData(pModel
         , ibuf[2] //nALLDIFF
@@ -14652,11 +14652,11 @@ PyObject *pyLSloadIISPriorities(PyObject *self, PyObject *args) {
 
 
     // Get C pointers
-    if (pyArr[2] && pyArr[2]->dimensions > 0)
-        ivecptr[2] = (int*)pyArr[2]->data;  //*panRprior
+    if (pyArr[2] && PyArray_DIMS(pyArr[2]) > 0)
+        ivecptr[2] = (int*)PyArray_DATA(pyArr[2]);  //*panRprior
 
-    if (pyArr[3] && pyArr[3]->dimensions > 0)
-        ivecptr[3] = (int*)pyArr[3]->data;  //*panCprior
+    if (pyArr[3] && PyArray_DIMS(pyArr[3]) > 0)
+        ivecptr[3] = (int*)PyArray_DATA(pyArr[3]);  //*panCprior
 
     errorcode = LSloadIISPriorities(pModel
         , ivecptr[2] //*panRprior
@@ -14744,14 +14744,14 @@ PyObject *pyLSloadNLPDense(PyObject *self, PyObject *args) {
     // Get C pointers
     S_GET_VECPTR(5);
     S_GET_VECPTR(6);
-    if (pyArr[7] && pyArr[7]->dimensions > 0)
-        dvecptr[7] = (double*)pyArr[7]->data;  //*padX0
+    if (pyArr[7] && PyArray_DIMS(pyArr[7]) > 0)
+        dvecptr[7] = (double*)PyArray_DATA(pyArr[7]);  //*padX0
 
-    if (pyArr[8] && pyArr[8]->dimensions > 0)
-        dvecptr[8] = (double*)pyArr[8]->data;  //*padL
+    if (pyArr[8] && PyArray_DIMS(pyArr[8]) > 0)
+        dvecptr[8] = (double*)PyArray_DATA(pyArr[8]);  //*padL
 
-    if (pyArr[9] && pyArr[9]->dimensions > 0)
-        dvecptr[9] = (double*)pyArr[9]->data;  //*padU
+    if (pyArr[9] && PyArray_DIMS(pyArr[9]) > 0)
+        dvecptr[9] = (double*)PyArray_DATA(pyArr[9]);  //*padU
 
     errorcode = LSloadNLPDense(pModel
         , ibuf[2] //nCons
@@ -14803,20 +14803,20 @@ PyObject *pyLSloadPOSDData(PyObject *self, PyObject *args) {
 
 
     // Get C pointers
-    if (pyArr[3] && pyArr[3]->dimensions > 0)
-        ivecptr[3] = (int*)pyArr[3]->data;  //*paiPOSDdim
+    if (pyArr[3] && PyArray_DIMS(pyArr[3]) > 0)
+        ivecptr[3] = (int*)PyArray_DATA(pyArr[3]);  //*paiPOSDdim
 
-    if (pyArr[4] && pyArr[4]->dimensions > 0)
-        ivecptr[4] = (int*)pyArr[4]->data;  //*paiPOSDbeg
+    if (pyArr[4] && PyArray_DIMS(pyArr[4]) > 0)
+        ivecptr[4] = (int*)PyArray_DATA(pyArr[4]);  //*paiPOSDbeg
 
-    if (pyArr[5] && pyArr[5]->dimensions > 0)
-        ivecptr[5] = (int*)pyArr[5]->data;  //*paiPOSDrowndx
+    if (pyArr[5] && PyArray_DIMS(pyArr[5]) > 0)
+        ivecptr[5] = (int*)PyArray_DATA(pyArr[5]);  //*paiPOSDrowndx
 
-    if (pyArr[6] && pyArr[6]->dimensions > 0)
-        ivecptr[6] = (int*)pyArr[6]->data;  //*paiPOSDcolndx
+    if (pyArr[6] && PyArray_DIMS(pyArr[6]) > 0)
+        ivecptr[6] = (int*)PyArray_DATA(pyArr[6]);  //*paiPOSDcolndx
 
-    if (pyArr[7] && pyArr[7]->dimensions > 0)
-        ivecptr[7] = (int*)pyArr[7]->data;  //*paiPOSDvarndx
+    if (pyArr[7] && PyArray_DIMS(pyArr[7]) > 0)
+        ivecptr[7] = (int*)PyArray_DATA(pyArr[7]);  //*paiPOSDvarndx
 
     errorcode = LSloadPOSDData(pModel
         , ibuf[2] //nPOSD
@@ -14900,8 +14900,8 @@ PyObject *pyLSloadStringData(PyObject *self, PyObject *args) {
 
 
     // Get C pointers
-    if (pyArr[3] && pyArr[3]->dimensions > 0)
-        svecptr[3] = (char*)pyArr[3]->data;  //**paszStringData
+    if (pyArr[3] && PyArray_DIMS(pyArr[3]) > 0)
+        svecptr[3] = (char*)PyArray_DATA(pyArr[3]);  //**paszStringData
 
     errorcode = LSloadStringData(pModel
         , ibuf[2] //nStrings
@@ -15275,22 +15275,22 @@ PyObject *pyLSregress(PyObject *self, PyObject *args) {
 
 
     // Get C pointers
-    if (pyArr[4] && pyArr[4]->dimensions > 0)
+    if (pyArr[4] && PyArray_DIMS(pyArr[4]) > 0)
         dvecptr[4] = (double*)PyArray_GetPtr(pyArr[4], index); //*padU
 
-    if (pyArr[5] && pyArr[5]->dimensions > 0)
+    if (pyArr[5] && PyArray_DIMS(pyArr[5]) > 0)
         dvecptr[5] = (double*)PyArray_GetPtr(pyArr[5], index); //*padX
 
-    if (pyArr[6] && pyArr[6]->dimensions > 0)
+    if (pyArr[6] && PyArray_DIMS(pyArr[6]) > 0)
         dvecptr[6] = (double*)PyArray_GetPtr(pyArr[6], index); //*padB
 
-    if (pyArr[7] && pyArr[7]->dimensions > 0)
+    if (pyArr[7] && PyArray_DIMS(pyArr[7]) > 0)
         dvecptr[7] = (double*)PyArray_GetPtr(pyArr[7], index); //*pdB0
 
-    if (pyArr[8] && pyArr[8]->dimensions > 0)
+    if (pyArr[8] && PyArray_DIMS(pyArr[8]) > 0)
         dvecptr[8] = (double*)PyArray_GetPtr(pyArr[8], index); //*padR
 
-    if (pyArr[9] && pyArr[9]->dimensions > 0)
+    if (pyArr[9] && PyArray_DIMS(pyArr[9]) > 0)
         dvecptr[9] = (double*)PyArray_GetPtr(pyArr[9], index); //*padstats
 
     errorcode = LSregress(
@@ -15385,10 +15385,10 @@ PyObject *pyLSgetMIPSolution(PyObject *self, PyObject *args) {
 
 
     // Get C pointers
-    if (pyArr[2] && pyArr[2]->dimensions > 0)
+    if (pyArr[2] && PyArray_DIMS(pyArr[2]) > 0)
         dvecptr[2] = (double*)PyArray_GetPtr(pyArr[2], index); //*pdPobjval
 
-    if (pyArr[3] && pyArr[3]->dimensions > 0)
+    if (pyArr[3] && PyArray_DIMS(pyArr[3]) > 0)
         dvecptr[3] = (double*)PyArray_GetPtr(pyArr[3], index); //*padPrimal
 
     errorcode = LSgetMIPSolution(pModel
@@ -15431,7 +15431,7 @@ PyObject *pyLSgetObjective(PyObject *self, PyObject *args) {
 
 
     // Get C pointers
-    if (pyArr[2] && pyArr[2]->dimensions > 0)
+    if (pyArr[2] && PyArray_DIMS(pyArr[2]) > 0)
         dvecptr[2] = (double*)PyArray_GetPtr(pyArr[2], index); //*pdObjval
 
     errorcode = LSgetObjective(pModel
@@ -15515,7 +15515,7 @@ PyObject *pyLSgetStringValue(PyObject *self, PyObject *args) {
 
 
     // Get C pointers
-    if (pyArr[3] && pyArr[3]->dimensions > 0)
+    if (pyArr[3] && PyArray_DIMS(pyArr[3]) > 0)
         dvecptr[3] = (double*)PyArray_GetPtr(pyArr[3], index); //*pdValue
 
     errorcode = LSgetStringValue(pModel
@@ -15560,11 +15560,11 @@ PyObject *pyLSrepairQterms(PyObject *self, PyObject *args) {
 
 
     // Get C pointers
-    if (pyArr[3] && pyArr[3]->dimensions > 0)
-        ivecptr[3] = (int*)pyArr[3]->data;  //*paiCons
+    if (pyArr[3] && PyArray_DIMS(pyArr[3]) > 0)
+        ivecptr[3] = (int*)PyArray_DATA(pyArr[3]);  //*paiCons
 
-    if (pyArr[4] && pyArr[4]->dimensions > 0)
-        ivecptr[4] = (int*)pyArr[4]->data;  //*paiType
+    if (pyArr[4] && PyArray_DIMS(pyArr[4]) > 0)
+        ivecptr[4] = (int*)PyArray_DATA(pyArr[4]);  //*paiType
 
     errorcode = LSrepairQterms(pModel
         , ibuf[2] //nCons
@@ -15826,7 +15826,7 @@ int LS_CALLTYPE relayMIPCallback(pLSmodel pModel, void *userdata, double dObjval
         npy_intp dim[1] = { 0 };
         LSgetInfo(pyudata->pModel, LS_IINFO_NUM_VARS, &dim[0]);
         if (!dim[0]) return 0;
-        pyPrimal = PyArray_SimpleNewFromData(n_dim, dim, PyArray_DOUBLE, (char*)padPrimal);
+        pyPrimal = PyArray_SimpleNewFromData(n_dim, dim, NPY_DOUBLE, (char*)padPrimal);
         // Build up the argument list...
         if (pyPrimal)
             arglist = Py_BuildValue("(OOdO)", pyudata->pyModel, pyudata->mipData, dObjval, pyPrimal);
@@ -15913,8 +15913,8 @@ int    LS_CALLTYPE relayFuncalc(pLSmodel pModel, void    *userdata,
         npy_intp dim[2] = { 0, 1 };
         LSgetInfo(pyudata->pModel, LS_IINFO_NUM_VARS, &dim[0]);
         if (!dim[0]) return 0;
-        pyPrimal = PyArray_SimpleNewFromData(n_dim, dim, PyArray_DOUBLE, (char*)padPrimal);
-        pyFuncVal = PyArray_SimpleNewFromData(n_dim, &dim[1], PyArray_DOUBLE, (char*)pdFuncVal);
+        pyPrimal = PyArray_SimpleNewFromData(n_dim, dim, NPY_DOUBLE, (char*)padPrimal);
+        pyFuncVal = PyArray_SimpleNewFromData(n_dim, &dim[1], NPY_DOUBLE, (char*)pdFuncVal);
         // Build up the argument list...
         if (pyPrimal)
             arglist = Py_BuildValue("(OOiOidOO)", pyudata->pyModel, pyudata->FData, nRow, pyPrimal, nJDiff, dXJBase, pyFuncVal, pyPrimal);
@@ -16005,12 +16005,12 @@ int    LS_CALLTYPE relayGradcalc(pLSmodel pModel, void *userdata,
         npy_intp dim[2] = { 0, 0 };
         LSgetInfo(pyudata->pModel, LS_IINFO_NUM_VARS, &dim[0]);
         if (!dim[0]) return 0;
-        pyPrimal = PyArray_SimpleNewFromData(n_dim, dim, PyArray_DOUBLE, (char*)padPrimal);
-        pyLB = PyArray_SimpleNewFromData(n_dim, dim, PyArray_DOUBLE, (char*)lb);
-        pyUB = PyArray_SimpleNewFromData(n_dim, dim, PyArray_DOUBLE, (char*)ub);
+        pyPrimal = PyArray_SimpleNewFromData(n_dim, dim, NPY_DOUBLE, (char*)padPrimal);
+        pyLB = PyArray_SimpleNewFromData(n_dim, dim, NPY_DOUBLE, (char*)lb);
+        pyUB = PyArray_SimpleNewFromData(n_dim, dim, NPY_DOUBLE, (char*)ub);
         dim[1] = nNPar;
-        pyPartial = PyArray_SimpleNewFromData(n_dim, &dim[1], PyArray_DOUBLE, (char*)partial);
-        pyParlist = PyArray_SimpleNewFromData(n_dim, &dim[1], PyArray_INT32, (char*)parlist);
+        pyPartial = PyArray_SimpleNewFromData(n_dim, &dim[1], NPY_DOUBLE, (char*)partial);
+        pyParlist = PyArray_SimpleNewFromData(n_dim, &dim[1], NPY_INT32, (char*)parlist);
         // Build up the argument list...
         if (pyPrimal)
             arglist = Py_BuildValue("(OOiOOOiiOO)", pyudata->pyModel, pyudata->GData, nRow, pyPrimal, pyLB, pyUB, nNewPnt, nNPar, pyParlist, pyPartial);
@@ -16199,7 +16199,7 @@ PyObject *pyLSgetObjPoolParam(PyObject *self, PyObject *args) {
 
 
   // Get C pointers
-  if (pyArr[4] && pyArr[4]->dimensions > 0)
+  if (pyArr[4] && PyArray_DIMS(pyArr[4]) > 0)
     dvecptr[4] = (double*)PyArray_GetPtr(pyArr[4], index); //*pdValue
 
   errorcode = LSgetObjPoolParam(pModel
@@ -16250,12 +16250,12 @@ PyObject *pyLSloadIndData(PyObject *self, PyObject *args){
 
     CHECK_MODEL;
 
-    if(pyIndicRows && pyIndicRows->dimensions > 0)
-        paiIndicRows = (int *)pyIndicRows->data;
-    if(pyIndicCols && pyIndicCols->dimensions > 0)
-        paiIndicCols = (int *)pyIndicCols->data;
-    if(pyIndicVals && pyIndicVals->dimensions > 0)
-        paiIndicVals = (int *)pyIndicVals->data;
+    if(pyIndicRows && PyArray_DIMS(pyIndicRows) > 0)
+        paiIndicRows = (int *)PyArray_DATA(pyIndicRows);
+    if(pyIndicCols && PyArray_DIMS(pyIndicCols) > 0)
+        paiIndicCols = (int *)PyArray_DATA(pyIndicCols);
+    if(pyIndicVals && PyArray_DIMS(pyIndicVals) > 0)
+        paiIndicVals = (int *)PyArray_DATA(pyIndicVals);
 
     errorcode = LSloadIndData(pModel,
                               nIndicRows,
@@ -16300,7 +16300,7 @@ PyObject *pyLSdeleteIndConstraints(PyObject *self, PyObject *args){
 
     CHECK_MODEL;
 
-    if(pyCons && pyCons->dimensions > 0) paiCons = (int *)pyCons->data;
+    if(pyCons && PyArray_DIMS(pyCons) > 0) paiCons = (int *)PyArray_DATA(pyCons);
 
     errorcode = LSdeleteIndConstraints(pModel,
                                     nCons,

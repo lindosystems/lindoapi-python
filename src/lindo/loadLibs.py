@@ -14,7 +14,7 @@ class BuildData():
 
     """
     def __init__(self):
-        self.MAJOR = "15"
+        self.MAJOR = "16"
         self.MINOR = "0"
         self.API_HOME = os.environ.get('LINDOAPI_HOME')
         self.IncludePath = os.path.join(self.API_HOME , "include")

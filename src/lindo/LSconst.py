@@ -17,10 +17,10 @@
  #####################################################################/
 
  # Version macros #/
-LS_MAJOR_VER_NUMBER                                          = 15
+LS_MAJOR_VER_NUMBER                                          = 16
 LS_MINOR_VER_NUMBER                                          = 0
 LS_REV_VER_NUMBER                                            = 126
-LS_VER_NUMBER                                                = 1500
+LS_VER_NUMBER                                                = 1600
 LS_BUILD_VER_NUMBER                                          = 6099
 
 LS_MIN                                                       = +1

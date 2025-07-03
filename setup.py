@@ -3,13 +3,16 @@
 
     This script is for building the lindo python package.
 """
+from distutils import extension
+from ntpath import join
 from setuptools import setup, Extension, find_packages
 from distutils.sysconfig import get_python_lib
-
 import os
 import sys
 import platform
-VERSION = "15.0.1"
+import numpy
+
+VERSION = "16.0.68"
 
 class BuildData():
     """
@@ -20,7 +23,7 @@ class BuildData():
 
     """
     def __init__(self):
-        self.MAJOR = "15"
+        self.MAJOR = "16"
         self.MINOR = "0"
         self.API_HOME = os.environ.get('LINDOAPI_HOME')
         self.IncludePath = os.path.join(self.API_HOME , "include")
@@ -100,7 +103,7 @@ extension = Extension(
                 library_dirs=[LibPath, BinPath],
                 depends=[BinPath],
                 libraries=[LindoLib],
-                include_dirs=[bd.IncludePath, numpyinclude],
+                include_dirs=[bd.IncludePath, numpy.get_include()],
                 extra_link_args=[extra_link_args],
                 )
 
@@ -122,7 +125,7 @@ kwargs = {
                 "Programming Language :: Python :: 3 :: Only",
         ],
         "python_requires": ">=3.7",
-        "install_requires": ["numpy>=1.19"],
+        "install_requires": ["numpy"],
         "ext_modules": [extension],
         "packages": ["lindo", "lindo_test"],
         "package_dir": {"": "src"},
