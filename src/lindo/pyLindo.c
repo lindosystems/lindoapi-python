@@ -1,4 +1,4 @@
-#define NPY_NO_DEPRECATED_API NPY_1_20_API_VERSION 
+#define NPY_NO_DEPRECATED_API NPY_2_0_API_VERSION 
 #include "Python.h"
 #include <numpy/arrayobject.h>
 #include "lindo.h"
@@ -15660,7 +15660,7 @@ void LS_CALLTYPE relayModelLogfunc(pLSmodel pModel, char *line, void *userdata)
         arglist = Py_BuildValue("(OsO)", pyudata->pyModel, line, pyudata->locData);
         // ...for calling the Python cb function
         if (arglist)
-            result = PyEval_CallObject(pyudata->locFunc, arglist);
+            result = PyObject_CallObject (pyudata->locFunc, arglist);
         //printf("%s", line);
     } /*if*/
 
@@ -15741,7 +15741,7 @@ int LS_CALLTYPE relayCallback(pLSmodel pModel, int iLoc, void *userdata)
         arglist = Py_BuildValue("(OiO)", pyudata->pyModel,iLoc, pyudata->cbData);
         // ...for calling the Python cb function
         if (arglist)
-            result = PyEval_CallObject(pyudata->cbFunc, arglist);
+            result = PyObject_CallObject (pyudata->cbFunc, arglist);
     } /*if*/
     if (result && PyLong_Check(result)) {
         retvalue = PyLong_AsLong(result);
@@ -15832,7 +15832,7 @@ int LS_CALLTYPE relayMIPCallback(pLSmodel pModel, void *userdata, double dObjval
             arglist = Py_BuildValue("(OOdO)", pyudata->pyModel, pyudata->mipData, dObjval, pyPrimal);
         // ...for calling the Python cb function
         if (arglist)
-            result = PyEval_CallObject(pyudata->mipFunc, arglist);
+            result = PyObject_CallObject (pyudata->mipFunc, arglist);
     } /*if*/
     if (result && PyLong_Check(result)) {
         retvalue = PyLong_AsLong(result);
@@ -15920,7 +15920,7 @@ int    LS_CALLTYPE relayFuncalc(pLSmodel pModel, void    *userdata,
             arglist = Py_BuildValue("(OOiOidOO)", pyudata->pyModel, pyudata->FData, nRow, pyPrimal, nJDiff, dXJBase, pyFuncVal, pyPrimal);
         // ...for calling the Python cb function
         if (arglist)
-            result = PyEval_CallObject(pyudata->Funcalc_func, arglist);
+            result = PyObject_CallObject (pyudata->Funcalc_func, arglist);
     } /*if*/
     if (result && PyLong_Check(result)) {
         nerr = PyLong_AsLong(result);
@@ -16016,7 +16016,7 @@ int    LS_CALLTYPE relayGradcalc(pLSmodel pModel, void *userdata,
             arglist = Py_BuildValue("(OOiOOOiiOO)", pyudata->pyModel, pyudata->GData, nRow, pyPrimal, pyLB, pyUB, nNewPnt, nNPar, pyParlist, pyPartial);
         // ...for calling the Python cb function
         if (arglist)
-            result = PyEval_CallObject(pyudata->Grad_func, arglist);
+            result = PyObject_CallObject (pyudata->Grad_func, arglist);
     } /*if*/
     if (result && PyLong_Check(result)) {
         nerr = PyLong_AsLong(result);
@@ -16104,7 +16104,7 @@ void LS_CALLTYPE relayEnvLogfunc(pLSenv pEnv, char *line, void *userdata)
         arglist = Py_BuildValue("(OsO)", pyudata->pyEnv, line, pyudata->locData);
         // ...for calling the Python cb function
         if (arglist)
-            result = PyEval_CallObject(pyudata->locFunc, arglist);
+            result = PyObject_CallObject (pyudata->locFunc, arglist);
         //printf("%s", line);
     } /*if*/
 
