@@ -10,7 +10,6 @@ from distutils.sysconfig import get_python_lib
 import os
 import sys
 import platform
-import numpy
 
 VERSION = "16.0.68"
 
@@ -33,16 +32,18 @@ class BuildData():
 
 bd = BuildData()
 
-try:
-    import numpy
-except Exception:
-    print('\nWarning: numpy was not found, installing...\n')
-    import subprocess
-    subprocess.call([sys.executable, "-m", "pip", "install", "numpy"])
+def get_numpy_include():
+    try:
+        import numpy
+        return numpy.get_include()
+    except ImportError:
+        print('\nWarning: numpy was not found, installing...\n')
+        import subprocess
+        subprocess.call([sys.executable, "-m", "pip", "install", "numpy"])
+        import numpy
+        return numpy.get_include()
 
-# include the numpy library
-numpyinclude = os.path.join(get_python_lib(
-      plat_specific=True), 'numpy/core/include/numpy')
+numpyinclude = get_numpy_include()
 
 # Gets the long description from README FILE
 setupDir = os.path.dirname(__file__)
@@ -105,7 +106,7 @@ extension = Extension(
                 library_dirs=[LibPath, BinPath],
                 depends=[BinPath],
                 libraries=[LindoLib],
-                include_dirs=[bd.IncludePath, numpy.get_include()],
+                include_dirs=[bd.IncludePath, numpyinclude],
                 extra_link_args=[extra_link_args],
                 )
 
