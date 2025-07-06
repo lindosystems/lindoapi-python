@@ -2,7 +2,7 @@
 
 This package requires LINDO API and a valid license key. Please refer to lindoapi/readme.html for LINDO API installation details.
 
-## Installation for LINDO API 15
+## Installation for LINDO API 16
 
 This python package can be installed with pip
 
@@ -10,6 +10,22 @@ For administrative users:
 
 ```bash
 > pip install lindo
+```
+
+For standard (non-administrative) users:
+
+```bash
+> pip install lindo --user
+```
+
+## Installation for LINDO API 15
+
+This python package can be installed with pip
+
+For administrative users: 
+
+```bash
+> pip install lindo=15.0.1
 ```
 
 For standard (non-administrative) users:
