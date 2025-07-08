@@ -74,9 +74,9 @@ elif bd.platform == 'Linux':
         LibPath = os.path.join(bd.API_HOME, 'lib/linux64')
         BinPath = os.path.join(bd.API_HOME, 'bin/linux64')
     else:
-        LindoLib = 'lindo'
-        LibPath = os.path.join(bd.API_HOME, 'lib/linux32')
-        BinPath = os.path.join(bd.API_HOME, 'bin/linux32')
+        LindoLib = 'linux64arm'
+        LibPath = os.path.join(bd.API_HOME, 'lib/linux64arm')
+        BinPath = os.path.join(bd.API_HOME, 'bin/linux64arm')
     extra_link_args = '-Wl,-rpath='+BinPath
     macros = []
 
