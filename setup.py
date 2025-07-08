@@ -69,7 +69,7 @@ if bd.platform == 'Windows':
 
 # For Linux
 elif bd.platform == 'Linux':
-    if bd.is_64bits:
+    if platform.machine() == 'x86_64':
         LindoLib = 'lindo64'
         LibPath = os.path.join(bd.API_HOME, 'lib/linux64')
         BinPath = os.path.join(bd.API_HOME, 'bin/linux64')
