@@ -2,7 +2,7 @@
 
 This package requires LINDO API and a valid license key. Please refer to lindoapi/readme.html for LINDO API installation details.
 
-## Installation for LINDO API 16
+## Installation for LINDO API 17
 
 This python package can be installed with pip
 
