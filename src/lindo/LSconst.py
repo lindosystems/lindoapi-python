@@ -742,9 +742,9 @@ LS_IPARAM_SAMP_NCM_ITERLIM                                   = 7706
 LS_DPARAM_SAMP_NCM_OPTTOL                                    = 7707
 LS_DPARAM_SAMP_CDSMAX                                       = 7708
 #! Number of parallel threads #/
-LS_IPARAM_SAMP_NUM_THREADS                                   = 7708
+LS_IPARAM_SAMP_NUM_THREADS                                   = 7738
 #! Buffer size for random number generators #/
-LS_IPARAM_SAMP_RG_BUFFER_SIZE                                = 7709
+LS_IPARAM_SAMP_RG_BUFFER_SIZE                                = 7739
 
 #Branch And Price parameters (8000 - 8499) #/
 
