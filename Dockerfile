@@ -21,8 +21,8 @@ ENV PY_PATH_310=/opt/python/cp310-cp310/bin/python
 WORKDIR /opt
 # install the Lingo API
 RUN yum -y install wget 
-RUN  wget https://www.lindo.com/downloads/LAPI-LINUX-64x86-15.0.tar.gz
-RUN tar -xvzf LAPI-LINUX-64x86-15.0.tar.gz
+RUN  wget https://www.lindo.com/downloads/LAPI-LINUX-64x86-17.0.tar.gz
+RUN tar -xvzf LAPI-LINUX-64x86-17.0.tar.gz
 ENV LINDOAPI_HOME=/opt/lindoapi
 
 

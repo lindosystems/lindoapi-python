@@ -14,7 +14,7 @@ class BuildData():
 
     """
     def __init__(self):
-        self.MAJOR = "16"
+        self.MAJOR = "17"
         self.MINOR = "0"
         self.API_HOME = os.environ.get('LINDOAPI_HOME')
         self.IncludePath = os.path.join(self.API_HOME , "include")
@@ -71,7 +71,7 @@ def checkVersion(bd:BuildData):
     except FileNotFoundError:
         No_lsversion_FileFound = f"Could not locate {fn}\n Create file and add \nLS_MAJOR={bd.MAJOR}\nLS_MINOR={bd.MINOR}"
         raise Exception(No_lsversion_FileFound)
-    # LS_MAJOR=15 the number starts at 9
+    # LS_MAJOR=17 the number starts at 9
     endOfDef = 9 
     majorNum = majorLine[endOfDef:]
     minorNum = majorLine[endOfDef:]

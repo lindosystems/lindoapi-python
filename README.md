@@ -18,6 +18,22 @@ For standard (non-administrative) users:
 > pip install lindo --user
 ```
 
+## Installation for LINDO API 16
+
+This python package can be installed with pip
+
+For administrative users: 
+
+```bash
+> pip install lindo==16.0.68
+```
+
+For standard (non-administrative) users:
+
+```bash
+> pip install lindo==16.0.68 --user
+```
+
 ## Installation for LINDO API 15
 
 This python package can be installed with pip
@@ -25,13 +41,13 @@ This python package can be installed with pip
 For administrative users: 
 
 ```bash
-> pip install lindo=15.0.1
+> pip install lindo==15.0.1
 ```
 
 For standard (non-administrative) users:
 
 ```bash
-> pip install lindo --user
+> pip install lindo==15.0.1 --user
 ```
 ## Installation for LINDO API 14
 
