@@ -158,6 +158,18 @@ LS_XSOLVER_COI                                               = 10
 LS_XSOLVER_SOP                                               = 11
 LS_XSOLVER_CBC                                               = 12
 LS_XSOLVER_XPR                                               = 13
+LS_XSOLVER_HIGHS                                             = 14
+LS_XSOLVER_IPOPT                                             = 15
+LS_XSOLVER_HIGHSLP                                           = 16
+LS_XSOLVER_COPT                                              = 17
+LS_XSOLVER_COPTLP                                            = 18
+LS_XSOLVER_XPRLP                                             = 19
+LS_XSOLVER_NLOPT                                             = 20
+LS_XSOLVER_MYUSER                                            = 94
+LS_XSOLVER_TABOX                                             = 95
+LS_XSOLVER_MUMPS                                             = 96
+LS_XSOLVER_MUPARSER                                          = 97
+LS_XSOLVER_LUA                                               = 98
 LS_XSOLVER_XLINDO                                            = 99
 
  # ref types #/
@@ -1036,6 +1048,13 @@ EP_XPOWDIVAB                                                 = 1185
 EP_LOGABEXPX                                                 = 1186
 EP_LOGSUMEXP                                                 = 1187
 EP_LOGSUMAEXP                                                = 1188
+EP_EXPMODIV                                                  = 1189
+EP_POWERUTILITY                                              = 1190
+EP_POLYNOMIAL                                                = 1191
+EP_CENSOR                                                    = 1192
+EP_ENTROPY                                                   = 1193
+EP_XLOGIT                                                    = 1194
+EP_IRR                                                       = 1195
 
 
 # Model and solution information codes ( 110xx-140xx) #/
@@ -2051,6 +2070,7 @@ LSLOC_SP_BENCH_START                                         = 24
 LSLOC_SP_BENCH_END                                           = 25
 LSLOC_BNP                                                    = 26
 LSLOC_OBJPOOL                                                = 27
+LSLOC_MIP_SETS                                               = 28
 
 
 LS_METHOD_FREE                                               = 0
