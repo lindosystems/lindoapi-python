@@ -1,7 +1,7 @@
 ###################################################################
 #                       LINDO-API
 #                    Sample Programs
-#                  Copyright (c) 2001-2018
+#                  Copyright (c) 2001-2027
 #
 #         LINDO Systems, Inc.           312.988.7422
 #         1332 North Halsted Street     info@lindo.com
